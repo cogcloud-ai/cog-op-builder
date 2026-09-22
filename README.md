@@ -28,4 +28,8 @@ Use this repository's issues for suite-wide outcomes and work spanning component
 
 ## License
 
-This repository is licensed under the [Apache License 2.0](LICENSE). Separately maintained components retain their own licenses.
+Copyright 2026 OpenTeams. This repository is licensed under the [Apache License 2.0](LICENSE).
+
+The maintained builder components have also been updated to Apache-2.0; see
+the [migration record](docs/licensing-migration.md) for scope and commits.
+Third-party dependencies and external services retain their own terms.
