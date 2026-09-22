@@ -28,4 +28,4 @@ Use this repository's issues for suite-wide outcomes and work spanning component
 
 ## License
 
-An open-source license has not yet been selected or added.
+This repository is licensed under the [Apache License 2.0](LICENSE). Separately maintained components retain their own licenses.
