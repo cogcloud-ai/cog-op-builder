@@ -1,0 +1,27 @@
+name: Model-free checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: workspace/cog-op-builder
+          persist-credentials: false
+      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+        with:
+          pixi-version: v0.69.0
+          run-install: false
+      - name: Install sibling environments
+        run: python3 workspace/cog-op-builder/scripts/bootstrap.py --workspace workspace --install
+      - name: Run model-free tests
+        run: python3 workspace/cog-op-builder/scripts/verify.py --workspace workspace

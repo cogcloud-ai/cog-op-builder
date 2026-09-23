@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "repositories": [
+    {
+      "name": "cog-smith",
+      "url": "https://github.com/cogcloud-ai/cog-smith.git",
+      "role": "core",
+      "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-op-designer",
+      "url": "https://github.com/cogcloud-ai/cog-op-designer.git",
+      "role": "core",
+      "description": "Propose Ops, reuse existing Cogs, and describe missing Cogs.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-author",
+      "url": "https://github.com/cogcloud-ai/cog-author.git",
+      "role": "core",
+      "description": "Turn briefs into contracts and author or revise Cog source.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-build-evaluator",
+      "url": "https://github.com/cogcloud-ai/cog-build-evaluator.git",
+      "role": "core",
+      "description": "Plan acceptance cases and review candidate-bound evidence.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-build-candidate",
+      "url": "https://github.com/cogcloud-ai/cog-build-candidate.git",
+      "role": "core",
+      "description": "Materialize validated authored source as a checked package.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-verify-candidate",
+      "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
+      "role": "core",
+      "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
+      "revision": "main"
+    },
+    {
+      "name": "op-cog-builder",
+      "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
+      "role": "core",
+      "description": "Compose author \u2192 materialize \u2192 plan \u2192 verify \u2192 review.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-workbench",
+      "url": "https://github.com/cogcloud-ai/cog-workbench.git",
+      "role": "core",
+      "description": "Local client, provider admission, composed invocation, and build UI.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-chatgpt",
+      "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
+      "role": "provider",
+      "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-claude",
+      "url": "https://github.com/cogcloud-ai/cog-claude.git",
+      "role": "provider",
+      "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-openrouter",
+      "url": "https://github.com/cogcloud-ai/cog-openrouter.git",
+      "role": "provider",
+      "description": "Admit and invoke a direct OpenRouter model through a local gateway.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-turn-harness",
+      "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
+      "role": "provider",
+      "description": "Provide a JSON interaction using a separately admitted model.",
+      "revision": "main"
+    },
+    {
+      "name": "op-builder-smoke",
+      "url": "https://github.com/cogcloud-ai/op-builder-smoke.git",
+      "role": "example",
+      "description": "Exercise real code-Cog handoffs, stopping, and durable resume.",
+      "revision": "main"
+    },
+    {
+      "name": "cog-merge-findings-candidate",
+      "url": "https://github.com/cogcloud-ai/cog-merge-findings-candidate.git",
+      "role": "example",
+      "description": "Preserved pipeline-built merge example used by the smoke Op.",
+      "revision": "main"
+    }
+  ]
+}

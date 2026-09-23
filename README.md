@@ -4,23 +4,20 @@ A tool suite for building and evaluating Cogs and Ops. Building an Op can identi
 
 This repository is the public entry point and coordination home for the suite: its roadmap, cross-repository issues, documentation, examples, and coordinating Ops. Reusable component Cogs retain their own repositories.
 
-## Current state
+## Public preview
 
-The suite is under active development. A first single-candidate Cog-builder workflow has been implemented and live-tested locally:
+The component implementation is available in the linked repositories. This is
+an experimental source distribution, not a production-ready release.
 
-**Author → materialize → plan → verify → review**
+**Author → materialize → plan → verify → review** starts from an accepted
+pure-code contract and stops after one review. Full brief intake, explicit
+artifact acceptance, automatic revisions, and integrated Op building remain
+planned. Building an Op will be able to create the Cogs it needs.
 
-It starts from an accepted pure-code contract. Full brief intake, explicit artifact acceptance, automatic revisions, and the integrated Op-building workflow remain planned. The local implementation has not yet been brought into this repository; this is not an installable release.
-
-## Components
-
-- [Cog / Op designer](https://github.com/cogcloud-ai/cog-op-designer)
-- [Cog author](https://github.com/cogcloud-ai/cog-author)
-- [Cog Smith](https://github.com/cogcloud-ai/cog-smith) — deterministic packaging and shared machinery
-- [Build evaluator](https://github.com/cogcloud-ai/cog-build-evaluator)
-- [Workbench](https://github.com/cogcloud-ai/cog-workbench) — client and invocation environment
-
-Additional local components include candidate materialization and verification Cogs, and the Cog-builder Op. These will be linked as they are published.
+- [Guide to every repository](docs/repositories.md)
+- [Fresh-checkout setup and model-free verification](docs/getting-started.md)
+- [Roadmap and current capability boundaries](docs/roadmap.md)
+- [Pinned component manifest](repositories.json)
 
 ## Tracking work
 
