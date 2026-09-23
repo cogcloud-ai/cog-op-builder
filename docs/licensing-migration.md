@@ -51,3 +51,10 @@ Licensing and metadata changes affect package fingerprints. Existing pinned
 provider bindings and activated compositions may need renewed admission and
 activation. Historical evidence continues to describe the exact earlier
 packages; it should not be rewritten to match the newly licensed versions.
+
+## Publication update (2026-09-23)
+
+The four packages listed above now have repositories and are included in the
+public preview. The preserved merge candidate is also published as a runnable
+example, with Apache-2.0 text matching its original manifest declaration.
+See the [current repository guide](repositories.md) and [component manifest](../repositories.json).

@@ -15,8 +15,8 @@ python3 cog-op-builder/scripts/verify.py
 
 The bootstrap installs declared, locked package environments. Tests use synthetic
 fixtures and local processes, not paid model calls or provider credentials.
-Some optional legacy integration tests skip when the unrelated forge checkout
-is absent. GitHub Actions runs the same entry points.
+Some optional legacy integration tests skip when the unrelated forge or
+issue-classifier checkouts are absent. GitHub Actions runs the same entry points.
 
 ## First executable example
 
