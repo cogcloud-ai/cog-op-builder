@@ -44,7 +44,9 @@ fresh-checkout prerequisite. No missing model is silently downloaded or selected
 
 Source and declared tests execute with trusted local authority. Review inputs
 and generated code before running them. This preview does not provide a sandbox.
-A completed build is a completed review workflow, not release acceptance.
+A completed build is a reviewed candidate that a person explicitly accepted at
+the Op's candidate Gate, bound to its digests; it is not release acceptance,
+publication, or an authenticated approval.
 
 After changing package source or metadata, re-admit affected providers and
 reactivate consumer compositions. Binding files and run artifacts are local,

@@ -9,10 +9,12 @@ This repository is the public entry point and coordination home for the suite: i
 The component implementation is available in the linked repositories. This is
 an experimental source distribution, not a production-ready release.
 
-**Author → materialize → plan → verify → review** starts from an accepted
-pure-code contract and stops after one review. Full brief intake, explicit
-artifact acceptance, automatic revisions, and integrated Op building remain
-planned. Building an Op will be able to create the Cogs it needs.
+**Design → contract Gate → author → materialize → plan → verify → review →
+candidate Gate** starts from a pure-code brief, pauses for an explicit decision
+over the exact designed contract, builds and reviews one candidate, and pauses
+for an explicit decision over that exact candidate. A rejection ends the run.
+Automatic revisions and integrated Op building remain planned. Building an Op
+will be able to create the Cogs it needs.
 
 - [Guide to every repository](docs/repositories.md)
 - [Fresh-checkout setup and model-free verification](docs/getting-started.md)

@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery.",
-      "revision": "f38f20a85480f28621104064abaaab4717f9ccbd"
+      "revision": "f3d303e2a2c97cae6db4a902225d3c1879edbc4d"
     },
     {
       "name": "cog-op-designer",
@@ -47,8 +47,8 @@
       "name": "op-cog-builder",
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
-      "description": "Compose author \u2192 materialize \u2192 plan \u2192 verify \u2192 review.",
-      "revision": "60923e53e2410394b19c6061f8413e0db6fcc8c6"
+      "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
+      "revision": "978e3aa07e28fa8ff61436d324fcf68829ea5638"
     },
     {
       "name": "cog-workbench",
@@ -90,7 +90,7 @@
       "url": "https://github.com/cogcloud-ai/op-builder-smoke.git",
       "role": "example",
       "description": "Exercise real code-Cog handoffs, stopping, and durable resume.",
-      "revision": "a809007f55cdfb112f961d1e92e749c580bece17"
+      "revision": "6ade3107871b6fe4c300b331e8fa02bc66c6819d"
     },
     {
       "name": "cog-merge-findings-candidate",

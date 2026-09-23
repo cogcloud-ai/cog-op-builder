@@ -11,15 +11,22 @@ work may proceed based on evidence and policy.
 
 - Propose an Op and produce missing-Cog briefs.
 - Author and revise context or pure-code Cogs through separate Cog contracts.
-- Run an accepted pure-code contract through one complete candidate review.
+- Design a pure-code contract from a brief and record an explicit, digest-bound
+  acceptance decision before anything is authored (2026-09-23).
+- Run the accepted contract through one complete candidate review and record an
+  explicit, digest-bound acceptance or rejection of that exact candidate;
+  review completion is never acceptance (2026-09-23).
 - Package source, execute declared tests and cases, and retain fingerprinted evidence.
-- Resume failed execution without repeating reusable completed steps.
+- Resume failed or paused execution without repeating reusable completed steps;
+  a pending decision survives a restart.
 - Run model-free integration tests from a fresh sibling checkout.
 
 ## Remaining capabilities
 
-- Connect brief intake to explicit contract and candidate acceptance decisions.
-- Route review feedback through bounded, durable revision cycles.
+- Authenticate the decider and present pending decisions in Workbench (today
+  `decided_by` is what the caller wrote).
+- Route review feedback and rejection reasons through bounded, durable revision
+  cycles (the 0.1.0 caller-prepared revise entry point is withdrawn until then).
 - Build missing Cogs during Op construction and produce a validated final Op.
 - Expose build status, evidence, approval, and recovery in Workbench.
 - Resolve and install dependencies without relying on a fixed sibling layout.
@@ -32,6 +39,8 @@ or Op. The organization project is [Collab Cog Builder](https://github.com/orgs/
 Project visibility is controlled separately from the public repositories.
 
 The active [lifecycle roadmap issue](https://github.com/cogcloud-ai/cog-op-builder/issues/1)
-contains 17 component sub-issues. Acceptance Gates, the missing-Cog handoff,
-isolated verification, and Workbench lifecycle UI are in Ready; other work is
-in Backlog. Consult the issue and board for current status.
+contains 17 component sub-issues. The acceptance Gates landed in op-cog-builder
+0.2.0 on Op machinery 0.7.0 (see its `docs/acceptance-gates-2026-09-23.md`);
+the missing-Cog handoff, isolated verification, and Workbench lifecycle UI are
+in Ready; other work is in Backlog. Consult the issue and board for current
+status.

@@ -43,6 +43,15 @@ Meaningful machinery history was retained. License-only remote commits were
 reconciled with the local implementation without force-pushing or deleting prior
 commits. New component packages received focused initial commits.
 
+## Update, later on 2026-09-23
+
+After this verification, cog-smith shipped Op machinery 0.7.0 (artifact human
+Gates) and op-cog-builder 0.2.0 added explicit contract and candidate
+acceptance Gates; op-builder-smoke re-synced the machinery. The manifest pins
+those commits. Re-verified locally: cog-smith 614 tests OK, op-cog-builder 14
+OK, op-builder-smoke 8 OK, and `smith op check` passes for both Ops. The table
+above is the original preview record.
+
 ## Scope
 
 This is a source preview. It supports single-candidate pure-code builds from an
