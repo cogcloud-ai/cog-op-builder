@@ -50,3 +50,10 @@ accepted contract. Automatic acceptance, revision orchestration, missing-Cog
 builds within Op construction, registry installation, and execution isolation
 remain follow-up work. The historical live qualification reports remain summaries
 of earlier exact package versions; their raw local records are not distributed.
+
+## Publication verification
+
+All 15 suite repositories are public and have private vulnerability reporting
+enabled. All 14 component repositories were cloned through their public HTTPS
+URLs and matched the manifest’s pinned commits. The lifecycle roadmap and 17
+component sub-issues were added to the organization project with explicit status.

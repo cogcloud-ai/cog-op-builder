@@ -21,7 +21,13 @@ planned. Building an Op will be able to create the Cogs it needs.
 
 ## Tracking work
 
-Use this repository's issues for suite-wide outcomes and work spanning components. Component implementation issues and pull requests should link back to the relevant suite issue.
+Start with the [connected builder lifecycle issue](https://github.com/cogcloud-ai/cog-op-builder/issues/1),
+which groups the component follow-up issues. Track their status on the
+[Collab Cog Builder board](https://github.com/orgs/openteams-ai/projects/46/views/2)
+(project access is managed separately from these public repositories).
+
+Use this repository's issues for suite-wide outcomes and work spanning components.
+Component implementation issues and pull requests link back to the relevant suite issue.
 
 ## License
 

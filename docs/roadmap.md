@@ -30,3 +30,8 @@ GitHub issues are the work-status source of truth. Cross-repository outcomes
 belong in this repository; implementation issues belong with their owning Cog
 or Op. The organization project is [Collab Cog Builder](https://github.com/orgs/openteams-ai/projects/46).
 Project visibility is controlled separately from the public repositories.
+
+The active [lifecycle roadmap issue](https://github.com/cogcloud-ai/cog-op-builder/issues/1)
+contains 17 component sub-issues. Acceptance Gates, the missing-Cog handoff,
+isolated verification, and Workbench lifecycle UI are in Ready; other work is
+in Backlog. Consult the issue and board for current status.
