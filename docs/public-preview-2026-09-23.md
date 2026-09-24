@@ -28,8 +28,7 @@ No paid model calls or provider credentials were used.
 | op-builder-smoke | 8 | OK |
 | cog-merge-findings-candidate | 13 | OK |
 
-Skipped checks require legacy forge/issue-classifier packages outside this
-preview, or do not apply to a particular provider composition. GitHub Actions
+Skipped checks require legacy packages outside this preview, or do not apply to a particular provider composition. GitHub Actions
 also exercises Linux and macOS; consult the current workflow runs for results.
 Smith package checks completed without errors. Custom providers and Smith itself
 correctly report that they do not use Smith's generated runtime machinery.

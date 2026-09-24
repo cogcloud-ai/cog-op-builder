@@ -39,8 +39,8 @@ The merge candidate is a preserved example, not the canonical merge
 implementation or a newly accepted release. The builder components and this
 example use Apache-2.0. Historical qualification artifacts are not included.
 
-The workspace's `coglab-harness`, frozen clients/forge, model demonstrations,
-triage Cogs, transcription examples, and CogCloud applications are separate
-projects. They are not required for the documented preview. Vendored contract
-schemas carry their recorded provenance; their upstream specification repos
-are not required to run the suite.
+Other projects developed alongside the suite (a governed harness, earlier
+frozen clients, model demonstrations, triage and transcription Cogs, and
+CogCloud applications) are separate and not distributed. They are not required
+for the documented preview. Vendored contract schemas carry their recorded
+provenance; the packages they came from are not required to run the suite.

@@ -40,7 +40,8 @@ Project visibility is controlled separately from the public repositories.
 
 The active [lifecycle roadmap issue](https://github.com/cogcloud-ai/cog-op-builder/issues/1)
 contains 17 component sub-issues. The acceptance Gates landed in op-cog-builder
-0.2.0 on Op machinery 0.7.0 (see its `docs/acceptance-gates-2026-09-23.md`);
+0.2.0 on Op machinery 0.7.0 (see its
+[acceptance Gates note](https://github.com/cogcloud-ai/op-cog-builder/blob/main/docs/acceptance-gates-2026-09-23.md));
 the missing-Cog handoff, isolated verification, and Workbench lifecycle UI are
 in Ready; other work is in Backlog. Consult the issue and board for current
 status.

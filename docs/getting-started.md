@@ -15,8 +15,8 @@ python3 cog-op-builder/scripts/verify.py
 
 The bootstrap installs declared, locked package environments. Tests use synthetic
 fixtures and local processes, not paid model calls or provider credentials.
-Some optional legacy integration tests skip when the unrelated forge or
-issue-classifier checkouts are absent. GitHub Actions runs the same entry points.
+Some optional legacy integration tests skip when packages outside this
+preview are absent. GitHub Actions runs the same entry points.
 
 ## First executable example
 
@@ -25,7 +25,8 @@ cd op-builder-smoke
 pixi run op -- --request examples/request.json
 ```
 
-This calls the preserved merge-findings Cog twice and records a durable Track.
+This calls the preserved [cog-merge-findings-candidate](https://github.com/cogcloud-ai/cog-merge-findings-candidate)
+Cog twice and records a durable Track.
 It demonstrates code-Cog execution and recovery, not a model-backed build.
 
 ## Build a Cog with a provider

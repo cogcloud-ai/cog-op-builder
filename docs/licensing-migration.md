@@ -29,7 +29,7 @@ Apache-2.0 license text, metadata, and documentation are also present locally
 in `cog-build-candidate`, `cog-verify-candidate`, `op-cog-builder`, and
 `op-builder-smoke`. These packages do not yet have their own GitHub repositories.
 Generated reference candidates and historical run artifacts were preserved.
-Unrelated workspace repositories were outside this migration's scope.
+Repositories outside the suite were outside this migration's scope.
 
 ## Generated packages
 
