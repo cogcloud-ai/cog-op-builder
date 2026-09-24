@@ -19,8 +19,11 @@ The Cog / Op Builder is one suite. Start with [setup](getting-started.md), then
 | [cog-qwen](https://github.com/cogcloud-ai/cog-qwen) | provider | Pinned local Qwen3-4B weights and llama.cpp, with independent host admission. |
 | [cog-openrouter](https://github.com/cogcloud-ai/cog-openrouter) | provider | Admit and invoke a direct OpenRouter model through a local gateway. |
 | [cog-turn-harness](https://github.com/cogcloud-ai/cog-turn-harness) | provider | Provide a JSON interaction using a separately admitted model. |
+| [cog-typesafe](https://github.com/cogcloud-ai/cog-typesafe) | provider | TypeSafe's Jev System One model: typed, calibrated decisions through explicit versioned bindings. |
+| [cog-system-one-adapter](https://github.com/cogcloud-ai/cog-system-one-adapter) | provider | System One typed answers from a separately admitted LLM through TypeSafe's System One adapter. |
 | [op-builder-smoke](https://github.com/cogcloud-ai/op-builder-smoke) | example | Exercise real code-Cog handoffs, stopping, and durable resume. |
 | [cog-word-tally](https://github.com/cogcloud-ai/cog-word-tally) | example | Word-frequency tally: the first Cog built through both builder acceptance Gates; the smoke Op's fixture. |
+| [cog-brief-router](https://github.com/cogcloud-ai/cog-brief-router) | example | Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief. |
 
 [cog-merge-findings-candidate](https://github.com/cogcloud-ai/cog-merge-findings-candidate)
 remains public as the historical record of the first pipeline build, but it is
@@ -41,6 +44,12 @@ Cogs and completing the Op remains planned.
 `cog-qwen` supplies local model access; `cog-openrouter` supplies cloud access. Both pair with `cog-turn-harness` for
 structured turns. Their own code is open source; external services, accounts,
 CLIs, and model weights retain their own terms.
+
+`cog-typesafe` and `cog-system-one-adapter` both satisfy `system-one/decisions`
+for decision Cogs (Smith's `decision` class): the first with TypeSafe's Jev, the
+second with an admitted OpenAI-compatible model through TypeSafe's MIT System
+One adapter. `cog-brief-router` is the example decision Cog. See
+[decision Cogs and System One providers](system-one-decisions.md).
 
 The merge candidate is a preserved example, not the canonical merge
 implementation or a newly accepted release. The builder components and this
