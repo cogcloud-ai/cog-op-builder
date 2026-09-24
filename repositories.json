@@ -6,28 +6,28 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery.",
-      "revision": "d11994e17ba5c5f88ba1d2f406fb23d9c4000ede"
+      "revision": "83ef6bbfb2c09409ae56a8456e5515d9fb1fc3fd"
     },
     {
       "name": "cog-op-designer",
       "url": "https://github.com/cogcloud-ai/cog-op-designer.git",
       "role": "core",
       "description": "Propose Ops, reuse existing Cogs, and describe missing Cogs.",
-      "revision": "36802578c99c4846c6425e4df5d7123ac7cf58a7"
+      "revision": "547229ebd5b6b1bdcd3d50d50018575a641aa085"
     },
     {
       "name": "cog-author",
       "url": "https://github.com/cogcloud-ai/cog-author.git",
       "role": "core",
       "description": "Turn briefs into contracts and author or revise Cog source.",
-      "revision": "4d360a250d8fe1c7ec8acb26dca39a96b48a5dd4"
+      "revision": "e60edf9ef8cfab09c6f30f31fb252c563b22f7ab"
     },
     {
       "name": "cog-build-evaluator",
       "url": "https://github.com/cogcloud-ai/cog-build-evaluator.git",
       "role": "core",
       "description": "Plan acceptance cases and review candidate-bound evidence.",
-      "revision": "9363e150a65652d33946ccd8dd92e095cfd33734"
+      "revision": "db612f51102f2c33ed9615f9ffb08aa608ff7194"
     },
     {
       "name": "cog-build-candidate",
@@ -55,21 +55,21 @@
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "50d0434924326fe178c43c642fbce1861559af3f"
+      "revision": "d3617e14024ef3109fb676116d92c11c0c54e2f9"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "ecfd87441b129759638087eef5d248f8c39a54f7"
+      "revision": "ccc930604844043c4de5705d0aaf529989703e2f"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "06f34d7c5545f60a5ca30a3eac8f96081a8fa6e9"
+      "revision": "efdf7c1ba029a2255de7309f9381dffaaff6054f"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "c79bc43f46e3584b0ee47f3502fbb0230f96f3d1"
+      "revision": "50ef14c5ffe3b99cc319ec8e5c8b78f450a46d40"
     },
     {
       "name": "op-builder-smoke",
@@ -98,6 +98,13 @@
       "role": "example",
       "description": "Word-frequency tally: the first Cog built through both builder acceptance Gates; the smoke Op's fixture.",
       "revision": "7a6ed68957489d99a2ebbd38d533c7b803658499"
+    },
+    {
+      "name": "cog-qwen",
+      "url": "https://github.com/cogcloud-ai/cog-qwen.git",
+      "role": "provider",
+      "description": "Local Qwen3-4B inference with pinned public weights and llama.cpp; pair with the turn harness.",
+      "revision": "c18c0a8f7cf164cf6329535ca5229586c801a30b"
     }
   ]
 }

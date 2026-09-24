@@ -9,3 +9,7 @@ repository are under Apache-2.0. Preserve component and third-party notices.
 Never commit credentials, installed binding records, private inputs, or raw
 provider execution records. Fix shared machinery upstream in Smith and vendor
 it byte-identically. CI must not require paid model calls or user credentials.
+
+Use only manifest-listed siblings and declared public dependencies. Run
+`python3 scripts/check_workspace.py` before submitting changes. Release checks
+use clean, pinned checkouts with `--strict`; see [workspace boundaries](docs/workspace-boundary.md).

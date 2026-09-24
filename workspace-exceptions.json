@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "exceptions": [
+    {
+      "path": "cog-smith/BUILDING_COGS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-release-brief",
+      "fingerprint": "115ce976f49d772342d3c941539075a9d51b47a98b7b90625c5e5e8418db9ee0",
+      "count": 7,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../op-my-workflow",
+      "fingerprint": "c2f739435ac4f83b3ac0a9322fec731e5984b92d50fe948bcd9cf51ddbf4253d",
+      "count": 3,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-media-transcriber",
+      "fingerprint": "2fc7d58beae629c57dead5549c6eee539d5157a4a849455c9946bb227c33bacc",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-speaker-attribution",
+      "fingerprint": "cbff07f763454261278107e6d844fa3685b4336145a5b62db7cc0cfd3ce559b9",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-item-classifier",
+      "fingerprint": "d50701e9a5f586251f1afe2d2c76de207f33ef12414bdd00891d6755d68296cb",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-overlap-detector",
+      "fingerprint": "51e2b782f3d4fb5eae0b620ad9d43d070c92b762f5044ff1fdbb621f9e5e5fe6",
+      "count": 2,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-dependency-detector",
+      "fingerprint": "22704495bd58901228872bdd3bd946c90087a2cd751031b216cbd7da0629f9b4",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-reader",
+      "fingerprint": "755930b50d37512c1b3aa251a78746937818dfa6a5ce5af533d404b190654a4b",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-composer",
+      "fingerprint": "6e87f39a6d4c6076974d7069cc5d3ddd46f61e7c26bc0d930cb7020892809f33",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/BUILDING_OPS.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-writer",
+      "fingerprint": "5ad86fdc572803c9b2d81ac17919bb27db1924e162045a042462fc54e8637d31",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/README.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-my-worker",
+      "fingerprint": "63533254624adfcc7ea2ff36cfe22484f0087618a2ac3574b4bbd0aa02fe3962",
+      "count": 5,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/README.md",
+      "rule": "undeclared-sibling",
+      "value": "../cog-older-worker",
+      "fingerprint": "d3825c739bb01e88b7b7c99d0258623bd64f5e0df11a1f411188d0f8a193cb53",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/examples/cog-request.json",
+      "rule": "undeclared-sibling",
+      "value": "../cog-release-brief",
+      "fingerprint": "115ce976f49d772342d3c941539075a9d51b47a98b7b90625c5e5e8418db9ee0",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/examples/cog-request.json",
+      "rule": "undeclared-sibling",
+      "value": "../cog-example-model",
+      "fingerprint": "db45f4e60d55757d3e3091683fb8640e4cded1e98da4bc14de9a6b53fb7f06b2",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/src/cogsmith_cli.py",
+      "rule": "undeclared-sibling",
+      "value": "../cog-my-worker",
+      "fingerprint": "63533254624adfcc7ea2ff36cfe22484f0087618a2ac3574b4bbd0aa02fe3962",
+      "count": 4,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/src/cogsmith_cli.py",
+      "rule": "undeclared-sibling",
+      "value": "../op-my-workflow",
+      "fingerprint": "c2f739435ac4f83b3ac0a9322fec731e5984b92d50fe948bcd9cf51ddbf4253d",
+      "count": 2,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/src/smith_migrate.py",
+      "rule": "undeclared-sibling",
+      "value": "../cog-x",
+      "fingerprint": "ba45f27df4f6047d9b57cf9796165d0fc9068d72cbb4da9c41f747690590ade7",
+      "count": 4,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/tests/test_op_process.py",
+      "rule": "undeclared-sibling",
+      "value": "../cog-propose",
+      "fingerprint": "42ec45961cbe13ce97e50ca955624c56ba746421d10907835c2d42ff694a6653",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/tests/test_op_spec.py",
+      "rule": "undeclared-sibling",
+      "value": "../cog-x",
+      "fingerprint": "ba45f27df4f6047d9b57cf9796165d0fc9068d72cbb4da9c41f747690590ade7",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    },
+    {
+      "path": "cog-smith/tests/test_smith_op.py",
+      "rule": "undeclared-sibling",
+      "value": "../cog-first",
+      "fingerprint": "425576fc05697124b06f8372ca349ce5a857761f0a4a08584c4f20e2081c269a",
+      "count": 1,
+      "reason": "Explicitly illustrative output/package name or synthetic test data; not a dependency of the public preview."
+    }
+  ]
+}

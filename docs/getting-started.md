@@ -9,14 +9,13 @@ reset by the setup script. Use a new directory to reproduce the pinned preview.
 mkdir builder-workspace
 cd builder-workspace
 git clone https://github.com/cogcloud-ai/cog-op-builder.git
-python3 cog-op-builder/scripts/bootstrap.py --install
-python3 cog-op-builder/scripts/verify.py
+python3 cog-op-builder/scripts/bootstrap.py --strict --install
+python3 cog-op-builder/scripts/verify.py --strict
 ```
 
 The bootstrap installs declared, locked package environments. Tests use synthetic
 fixtures and local processes, not paid model calls or provider credentials.
-Some optional legacy integration tests skip when packages outside this
-preview are absent. GitHub Actions runs the same entry points.
+All integration fixtures are in the suite. GitHub Actions runs the same entry points.
 
 ## First executable example
 
@@ -39,10 +38,12 @@ A subscription adapter requires the vendor CLI and your own authorized login;
 OpenRouter requires your own API configuration. These are optional for tests.
 Live use may incur provider charges.
 
-The context Cogs retain a legacy native model reference to `cog-demo/cog-qwen3b`.
-That private demonstration is not part of this distribution. Use the documented
-`ask-composed` binding route for the builder; the native `resolve` demo is not a
-fresh-checkout prerequisite. No missing model is silently downloaded or selected.
+For local inference, follow [the Qwen provider guide](https://github.com/cogcloud-ai/cog-qwen#readme).
+The context Cogs and new Smith packages default to the public `cog-qwen` sibling.
+Weight download is explicit (`pixi run fetch` in that package); normal installation
+and tests never fetch model weights. Pair an admitted Qwen model binding with
+`cog-turn-harness` for the composed builder, or use the native resolver after
+starting the local model with its documented token.
 
 Source and declared tests execute with trusted local authority. Review inputs
 and generated code before running them. This preview does not provide a sandbox.
@@ -53,3 +54,5 @@ publication, or an authenticated approval.
 After changing package source or metadata, re-admit affected providers and
 reactivate consumer compositions. Binding files and run artifacts are local,
 ignored state; never copy another person's credentials or installed bindings.
+
+For development checks and dependency policy, see [workspace boundaries](workspace-boundary.md).

@@ -16,6 +16,7 @@ The Cog / Op Builder is one suite. Start with [setup](getting-started.md), then
 | [cog-workbench](https://github.com/cogcloud-ai/cog-workbench) | core | Local client, provider admission, composed invocation, and build UI. |
 | [cog-chatgpt](https://github.com/cogcloud-ai/cog-chatgpt) | provider | Use a separately installed Codex CLI and the user’s ChatGPT login. |
 | [cog-claude](https://github.com/cogcloud-ai/cog-claude) | provider | Use a separately installed Claude Code CLI and the user’s Claude login. |
+| [cog-qwen](https://github.com/cogcloud-ai/cog-qwen) | provider | Pinned local Qwen3-4B weights and llama.cpp, with independent host admission. |
 | [cog-openrouter](https://github.com/cogcloud-ai/cog-openrouter) | provider | Admit and invoke a direct OpenRouter model through a local gateway. |
 | [cog-turn-harness](https://github.com/cogcloud-ai/cog-turn-harness) | provider | Provide a JSON interaction using a separately admitted model. |
 | [op-builder-smoke](https://github.com/cogcloud-ai/op-builder-smoke) | example | Exercise real code-Cog handoffs, stopping, and durable resume. |
@@ -37,7 +38,7 @@ produces proposals and missing-Cog briefs; automatically building those missing
 Cogs and completing the Op remains planned.
 
 `cog-chatgpt` and `cog-claude` each include their vendor CLI interaction.
-`cog-openrouter` supplies model access, paired with `cog-turn-harness` for
+`cog-qwen` supplies local model access; `cog-openrouter` supplies cloud access. Both pair with `cog-turn-harness` for
 structured turns. Their own code is open source; external services, accounts,
 CLIs, and model weights retain their own terms.
 

@@ -19,6 +19,8 @@ will be able to create the Cogs it needs.
 - [Guide to every repository](docs/repositories.md)
 - [Fresh-checkout setup and model-free verification](docs/getting-started.md)
 - [Roadmap and current capability boundaries](docs/roadmap.md)
+- [Public workspace boundary](docs/workspace-boundary.md)
+- [Local Qwen provider](https://github.com/cogcloud-ai/cog-qwen)
 - [Pinned component manifest](repositories.json)
 
 ## Tracking work
