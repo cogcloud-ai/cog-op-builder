@@ -27,7 +27,7 @@
       "url": "https://github.com/cogcloud-ai/cog-build-evaluator.git",
       "role": "core",
       "description": "Plan acceptance cases and review candidate-bound evidence.",
-      "revision": "b75c1e401fc3bf77ae7e17cd70a062d249167c4a"
+      "revision": "9363e150a65652d33946ccd8dd92e095cfd33734"
     },
     {
       "name": "cog-build-candidate",
@@ -48,14 +48,14 @@
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "66cf94fb97adbba0dd3a30e7a698d91581ac62e2"
+      "revision": "23afa867e0593d1988473c9acfa768558b25ebdd"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "061f16bc5c2c9994f4b0274728b53deac58b6ad6"
+      "revision": "50d0434924326fe178c43c642fbce1861559af3f"
     },
     {
       "name": "cog-chatgpt",
@@ -90,14 +90,14 @@
       "url": "https://github.com/cogcloud-ai/op-builder-smoke.git",
       "role": "example",
       "description": "Exercise real code-Cog handoffs, stopping, and durable resume.",
-      "revision": "deade01064c0e60758101913b0c56d1305f4d6e1"
+      "revision": "94340dcefc4ce17adb5f252f1f3a5d38a372a308"
     },
     {
-      "name": "cog-merge-findings-candidate",
-      "url": "https://github.com/cogcloud-ai/cog-merge-findings-candidate.git",
+      "name": "cog-word-tally",
+      "url": "https://github.com/cogcloud-ai/cog-word-tally.git",
       "role": "example",
-      "description": "Preserved pipeline-built merge example used by the smoke Op.",
-      "revision": "4a08cd59f00450ddb0124e1abafefeea727c4f2a"
+      "description": "Word-frequency tally: the first Cog built through both builder acceptance Gates; the smoke Op's fixture.",
+      "revision": "7a6ed68957489d99a2ebbd38d533c7b803658499"
     }
   ]
 }

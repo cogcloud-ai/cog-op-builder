@@ -53,7 +53,10 @@ internal, undistributed material); the machinery re-copy is comment-only
 (Op 0.7.1, context-cog 0.4.3, code-cog 0.1.5). Re-verified locally after
 those commits: cog-smith 614 tests OK, op-cog-builder 14 OK, op-builder-smoke
 8 OK, every Cog suite at its listed count, and Smith checks pass. The table
-above is the original preview record.
+above is the original preview record. The same day, cog-word-tally (12 tests)
+joined the manifest as the first Cog built live through both acceptance Gates,
+op-builder-smoke 0.2.0 switched to it, and cog-merge-findings-candidate left
+the manifest (still public, no longer a component).
 
 ## Scope
 

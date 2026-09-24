@@ -19,7 +19,13 @@ The Cog / Op Builder is one suite. Start with [setup](getting-started.md), then
 | [cog-openrouter](https://github.com/cogcloud-ai/cog-openrouter) | provider | Admit and invoke a direct OpenRouter model through a local gateway. |
 | [cog-turn-harness](https://github.com/cogcloud-ai/cog-turn-harness) | provider | Provide a JSON interaction using a separately admitted model. |
 | [op-builder-smoke](https://github.com/cogcloud-ai/op-builder-smoke) | example | Exercise real code-Cog handoffs, stopping, and durable resume. |
-| [cog-merge-findings-candidate](https://github.com/cogcloud-ai/cog-merge-findings-candidate) | example | Preserved pipeline-built merge example used by the smoke Op. |
+| [cog-word-tally](https://github.com/cogcloud-ai/cog-word-tally) | example | Word-frequency tally: the first Cog built through both builder acceptance Gates; the smoke Op's fixture. |
+
+[cog-merge-findings-candidate](https://github.com/cogcloud-ai/cog-merge-findings-candidate)
+remains public as the historical record of the first pipeline build, but it is
+no longer a suite component: its accepted contract names Cogs outside this
+suite, so it cannot be read as self-contained. The smoke Op no longer depends
+on it.
 
 ## Relationships
 

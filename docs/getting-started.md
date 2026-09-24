@@ -25,9 +25,10 @@ cd op-builder-smoke
 pixi run op -- --request examples/request.json
 ```
 
-This calls the preserved [cog-merge-findings-candidate](https://github.com/cogcloud-ai/cog-merge-findings-candidate)
-Cog twice and records a durable Track.
-It demonstrates code-Cog execution and recovery, not a model-backed build.
+This calls [cog-word-tally](https://github.com/cogcloud-ai/cog-word-tally), a
+Cog the builder itself produced, twice, passing the first tally into the second,
+and records a durable Track. It demonstrates code-Cog execution and recovery,
+not a model-backed build.
 
 ## Build a Cog with a provider
 

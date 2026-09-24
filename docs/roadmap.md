@@ -20,6 +20,8 @@ work may proceed based on evidence and policy.
 - Resume failed or paused execution without repeating reusable completed steps;
   a pending decision survives a restart.
 - Run model-free integration tests from a fresh sibling checkout.
+- One Cog, cog-word-tally, built live from a brief through both Gates and
+  published; the builder's smoke Op exercises it (2026-09-23).
 
 ## Remaining capabilities
 
