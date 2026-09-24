@@ -47,8 +47,12 @@ commits. New component packages received focused initial commits.
 After this verification, cog-smith shipped Op machinery 0.7.0 (artifact human
 Gates) and op-cog-builder 0.2.0 added explicit contract and candidate
 acceptance Gates; op-builder-smoke re-synced the machinery. The manifest pins
-those commits. Re-verified locally: cog-smith 614 tests OK, op-cog-builder 14
-OK, op-builder-smoke 8 OK, and `smith op check` passes for both Ops. The table
+those commits. Every suite repository then had its documentation, examples
+and machinery comments made self-contained (no links or pointers to
+internal, undistributed material); the machinery re-copy is comment-only
+(Op 0.7.1, context-cog 0.4.3, code-cog 0.1.5). Re-verified locally after
+those commits: cog-smith 614 tests OK, op-cog-builder 14 OK, op-builder-smoke
+8 OK, every Cog suite at its listed count, and Smith checks pass. The table
 above is the original preview record.
 
 ## Scope
