@@ -22,6 +22,10 @@ work may proceed based on evidence and policy.
 - Run model-free integration tests from a fresh sibling checkout.
 - One Cog, cog-word-tally, built live from a brief through both Gates and
   published; the builder's smoke Op exercises it (2026-09-23).
+- Decision Cogs: a Smith class whose typed questions a System One model
+  answers, with TypeSafe's Jev and an LLM-backed System One adapter as
+  `system-one/decisions` providers, Workbench composition, and an example
+  (cog-brief-router) (2026-09-24).
 
 ## Remaining capabilities
 
@@ -30,6 +34,7 @@ work may proceed based on evidence and policy.
 - Route review feedback and rejection reasons through bounded, durable revision
   cycles (the 0.1.0 caller-prepared revise entry point is withdrawn until then).
 - Build missing Cogs during Op construction and produce a validated final Op.
+- Let the designer and author propose and author decision Cogs.
 - Expose build status, evidence, approval, and recovery in Workbench.
 - Resolve and install dependencies without relying on a fixed sibling layout.
 - Strengthen execution isolation and independent evidence verification.

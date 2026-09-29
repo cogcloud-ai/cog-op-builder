@@ -39,6 +39,8 @@ OpenRouter requires your own API configuration. These are optional for tests.
 Live use may incur provider charges.
 
 For local inference, follow [the Qwen provider guide](https://github.com/cogcloud-ai/cog-qwen#readme).
+For typed, probabilistic decisions from TypeSafe's Jev or an admitted LLM, see
+[decision Cogs and System One providers](system-one-decisions.md).
 The context Cogs and new Smith packages default to the public `cog-qwen` sibling.
 Weight download is explicit (`pixi run fetch` in that package); normal installation
 and tests never fetch model weights. Pair an admitted Qwen model binding with

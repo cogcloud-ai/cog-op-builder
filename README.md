@@ -21,6 +21,7 @@ will be able to create the Cogs it needs.
 - [Roadmap and current capability boundaries](docs/roadmap.md)
 - [Public workspace boundary](docs/workspace-boundary.md)
 - [Local Qwen provider](https://github.com/cogcloud-ai/cog-qwen)
+- [Decision Cogs with TypeSafe's Jev or an LLM (System One)](docs/system-one-decisions.md)
 - [Pinned component manifest](repositories.json)
 
 ## Tracking work

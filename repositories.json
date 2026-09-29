@@ -5,8 +5,8 @@
       "name": "cog-smith",
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
-      "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery.",
-      "revision": "83ef6bbfb2c09409ae56a8456e5515d9fb1fc3fd"
+      "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
+      "revision": "c069f24db390a43062c2d4e0929340223c1eb488"
     },
     {
       "name": "cog-op-designer",
@@ -55,7 +55,7 @@
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "d3617e14024ef3109fb676116d92c11c0c54e2f9"
+      "revision": "40fe0e2d0d4b398cb3b58756917249070a88da1b"
     },
     {
       "name": "cog-chatgpt",
@@ -86,6 +86,20 @@
       "revision": "50ef14c5ffe3b99cc319ec8e5c8b78f450a46d40"
     },
     {
+      "name": "cog-typesafe",
+      "url": "https://github.com/cogcloud-ai/cog-typesafe.git",
+      "role": "provider",
+      "description": "TypeSafe's Jev System One model: typed, calibrated decisions through explicit versioned bindings.",
+      "revision": "b59b46b4e891498dcdc965eb54f9fbef0237d284"
+    },
+    {
+      "name": "cog-system-one-adapter",
+      "url": "https://github.com/cogcloud-ai/cog-system-one-adapter.git",
+      "role": "provider",
+      "description": "System One typed answers from a separately admitted LLM through TypeSafe's System One adapter.",
+      "revision": "bb3a4ca6bf1e48e4fda5d295e5fd12be67625ca3"
+    },
+    {
       "name": "op-builder-smoke",
       "url": "https://github.com/cogcloud-ai/op-builder-smoke.git",
       "role": "example",
@@ -105,6 +119,13 @@
       "role": "provider",
       "description": "Local Qwen3-4B inference with pinned public weights and llama.cpp; pair with the turn harness.",
       "revision": "c18c0a8f7cf164cf6329535ca5229586c801a30b"
+    },
+    {
+      "name": "cog-brief-router",
+      "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
+      "role": "example",
+      "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
+      "revision": "5fa2f80b217c48d17d7cdf465834695b59f1a343"
     }
   ]
 }
