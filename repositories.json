@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "57448f1626fa4f1edd6cd65cbaa00a32eda7ad40"
+      "revision": "c069f24db390a43062c2d4e0929340223c1eb488"
     },
     {
       "name": "cog-op-designer",
