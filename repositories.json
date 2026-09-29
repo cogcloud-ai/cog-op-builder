@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "1eda9cda1221d8ed8ff7aca71cff7e3828f397bf"
+      "revision": "380eb968fa388f7568cdbf7704a95ade5d2f23b6"
     },
     {
       "name": "cog-op-designer",
@@ -55,7 +55,7 @@
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "3cd06f0aa4d5d2416442122c66638a7c2c7f9863"
+      "revision": "40fe0e2d0d4b398cb3b58756917249070a88da1b"
     },
     {
       "name": "cog-chatgpt",
@@ -90,14 +90,14 @@
       "url": "https://github.com/cogcloud-ai/cog-typesafe.git",
       "role": "provider",
       "description": "TypeSafe's Jev System One model: typed, calibrated decisions through explicit versioned bindings.",
-      "revision": "db8e45dd7cc61ca2bcc5e2faff5889f39437dab9"
+      "revision": "b59b46b4e891498dcdc965eb54f9fbef0237d284"
     },
     {
       "name": "cog-system-one-adapter",
       "url": "https://github.com/cogcloud-ai/cog-system-one-adapter.git",
       "role": "provider",
       "description": "System One typed answers from a separately admitted LLM through TypeSafe's System One adapter.",
-      "revision": "73ee46d7fad4bd6dbe2fa2f4ab2afa2c98ece6d5"
+      "revision": "bb3a4ca6bf1e48e4fda5d295e5fd12be67625ca3"
     },
     {
       "name": "op-builder-smoke",
@@ -125,7 +125,7 @@
       "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
       "role": "example",
       "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
-      "revision": "d4b47c9c47ec1dac3f55f24cd02ea74f39a9b09c"
+      "revision": "5fa2f80b217c48d17d7cdf465834695b59f1a343"
     }
   ]
 }
