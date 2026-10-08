@@ -1,0 +1,31 @@
+[workspace]
+name = "fit"
+version = "0.1.0"
+description = "Assess one fictional opportunity using typed answers and explicit policy."
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+# 3.11+: the machinery reads this file's [tool.cog] manifest with tomllib
+python = ">=3.11"
+# reads cog.yaml-format manifests
+pyyaml = "*"
+# normative question, answer, input and output schema validation
+jsonschema = "*"
+
+[tasks]
+# --- usage ops (face users and the Op layer) ---
+# Live answers come only through a host-admitted System One binding that
+# Workbench activated for this Cog (`suite activate-composition`).
+ask-composed = "python scripts/live_usage.py"
+# --- lifecycle ops (face the hosting environment) ---
+composition = "python src/cog_cli.py bridge"
+prepare = "python src/cog_cli.py prepare"
+replay = "python src/cog_cli.py replay"
+derive-schema = "python src/cog_cli.py derive-schema --write"
+check = "python src/cog_cli.py --check"
+test = "python -m unittest discover -s tests -v"
+
+
+[tasks.fixture]
+cmd = "python scripts/fixture_usage.py"

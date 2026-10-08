@@ -29,6 +29,14 @@ Cog the builder itself produced, twice, passing the first tally into the second,
 and records a durable Track. It demonstrates code-Cog execution and recovery,
 not a model-backed build.
 
+## Learn one Cog, then an Op
+
+For a guided introduction, use [Opportunity Shortlist](../examples/opportunity-shortlist/README.md).
+It starts with one decision Cog, then connects three Cogs into an Op that pauses
+for a human choice. Fictional inputs and explicitly synthetic answers make the
+default walkthrough model-free. It includes exercises, answers, a facilitator
+guide, and an optional live-provider path. Full suite verification checks it too.
+
 ## Build a Cog with a provider
 
 Follow [Workbench's provider setup](https://github.com/cogcloud-ai/cog-workbench/blob/main/docs/tool-suite.md)

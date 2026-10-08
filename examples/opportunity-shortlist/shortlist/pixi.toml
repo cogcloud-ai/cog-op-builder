@@ -1,0 +1,23 @@
+[workspace]
+name = "shortlist"
+version = "0.1.0"
+description = "Rank opportunity assessments and propose a human-reviewed shortlist."
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+# 3.11+: the machinery reads this file's [tool.cog] manifest with tomllib
+python = ">=3.11"
+# reads cog.yaml-format manifests
+pyyaml = "*"
+# normative input/output schema validation
+jsonschema = "*"
+
+[tasks]
+# --- usage ops (face users and the Op layer) ---
+run = "python src/cog_cli.py"
+# --- lifecycle ops (face the hosting environment) ---
+# no `resolve`: a code Cog has no model dependency to bind.
+check = "python src/cog_cli.py --check"
+test = "python -m unittest discover -s tests -v"
+

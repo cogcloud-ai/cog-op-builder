@@ -1,0 +1,25 @@
+[workspace]
+name = "op-live"
+version = "0.1.0"
+description = "The same fictional workflow using a separately admitted live System One provider. No external effects."
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+# 3.11+: the Op machinery matches the created-Cog floor
+python = ">=3.11"
+# op.yaml is YAML; declared input schemas are JSON Schema
+pyyaml = "*"
+jsonschema = "*"
+
+[tasks]
+op = "python src/op_runner.py"
+test = "python -m unittest discover -s tests -v"
+
+# ---------------------------------------------------------------------------
+# An Op is not a Cog: this package carries no Cog profile manifest. Its
+# executable spec is op.yaml (openteams/op-learning-shortlist), and every worker it uses is an
+# independently installable Cog invoked through that Cog's declared usage
+# task. If this Op needs code, the answer is another Cog step — never a
+# script in the Op.
+# ---------------------------------------------------------------------------

@@ -1,0 +1,19 @@
+{
+  "company": {
+    "name": "Example Construction Cooperative",
+    "capabilities": [
+      "licensed structural engineering",
+      "bridge construction",
+      "construction crew"
+    ]
+  },
+  "opportunity": {
+    "id": "OPP-001",
+    "title": "Community data dashboard",
+    "description": "Build a Python dashboard for a community organization and train its staff. No specialist certification required."
+  },
+  "policy": {
+    "pursue_at": 0.75,
+    "review_at": 0.4
+  }
+}

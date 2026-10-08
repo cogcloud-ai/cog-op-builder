@@ -1,0 +1,19 @@
+{
+  "opportunity": {
+    "id": "OPP-001",
+    "title": "Community data dashboard",
+    "description": "Build a Python dashboard for a community organization and train its staff. No specialist certification required."
+  },
+  "company": {
+    "name": "Example Software Cooperative",
+    "capabilities": [
+      "Python software development",
+      "data dashboards",
+      "user training"
+    ]
+  },
+  "policy": {
+    "pursue_at": 0.75,
+    "review_at": 0.4
+  }
+}

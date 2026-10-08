@@ -1,0 +1,143 @@
+{
+  "description": "Hand-authored synthetic answers for these exact fictional states and questions. No provider was called. Values are not calibrated probabilities or recorded model responses.",
+  "fixtures": [
+    {
+      "opportunity_id": "OPP-001",
+      "company": "Example Software Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.92
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.88
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "3382c90a64a469d0a541063b547b86268cfe83a8c1d6154df8ad88ddc533e912"
+    },
+    {
+      "opportunity_id": "OPP-002",
+      "company": "Example Software Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.85
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.55
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "be09e5b0070c8d0c72cbe402e29befe36501ae2d8327eac15758af711dc9a2ef"
+    },
+    {
+      "opportunity_id": "OPP-003",
+      "company": "Example Software Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.08
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.05
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "97754650df372a9edab91760efad2305af9d857d7b986f196beb61ca2668c666"
+    },
+    {
+      "opportunity_id": "OPP-001",
+      "company": "Example Construction Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.12
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.08
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "81022a7687daccdaf2a104a204d8d8f258cbf93f280eb8f6973c8622751f7c90"
+    },
+    {
+      "opportunity_id": "OPP-002",
+      "company": "Example Construction Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.1
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.06
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "5f71fb29fd48217f87374667ba7bfb17648581e80000524cddbbc5857aa6e158"
+    },
+    {
+      "opportunity_id": "OPP-003",
+      "company": "Example Construction Cooperative",
+      "result": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter",
+        "answers": {
+          "scope_match": {
+            "type": "noul",
+            "noul": 0.96
+          },
+          "delivery_capacity": {
+            "type": "noul",
+            "noul": 0.94
+          }
+        },
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null
+        }
+      },
+      "task_sha256": "6ca4cbe4cc8cc40b228055a7b6b35bb3668e003c7fa2f478ea2a206f25e7fda8"
+    }
+  ]
+}

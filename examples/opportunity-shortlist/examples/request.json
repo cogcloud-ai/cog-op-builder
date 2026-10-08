@@ -1,0 +1,31 @@
+{
+  "company": {
+    "name": "Example Software Cooperative",
+    "capabilities": [
+      "Python software development",
+      "data dashboards",
+      "user training"
+    ]
+  },
+  "policy": {
+    "pursue_at": 0.75,
+    "review_at": 0.4
+  },
+  "opportunities": [
+    {
+      "id": "OPP-001",
+      "title": "Community data dashboard",
+      "description": "Build a Python dashboard for a community organization and train its staff. No specialist certification required."
+    },
+    {
+      "id": "OPP-002",
+      "title": "Data portal with specialist security audit",
+      "description": "Build a data portal and perform a certified security audit. The team has no certified security auditor."
+    },
+    {
+      "id": "OPP-003",
+      "title": "Replace a pedestrian bridge",
+      "description": "Design and construct a pedestrian bridge. Requires a licensed structural engineer and a construction crew."
+    }
+  ]
+}

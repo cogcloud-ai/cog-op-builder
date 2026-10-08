@@ -1,0 +1,6 @@
+.pixi/
+__pycache__/
+*.pyc
+var/
+op/runs/
+op-live/runs/

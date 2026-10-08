@@ -1,0 +1,32 @@
+schema: openteams/cog-manifest [0.1]
+id: openteams/shortlist
+version: 0.1.0
+summary: Rank opportunity assessments and propose a human-reviewed shortlist.
+license: Apache-2.0
+kind: code
+owner: trent@openteams.com
+frames: []
+requires: []
+reaches: []
+context:
+  input_schema: context/input-schema.json
+  output_schema: context/output-schema.json
+interfaces:
+- name: cli
+  kind: command
+  task: run
+  audience: usage
+  default: true
+- name: check
+  kind: command
+  task: check
+  audience: lifecycle
+io:
+  accepts:
+  - task_request
+  produces:
+  - proposed_shortlist
+memory: none
+prohibits:
+- send_external_message
+- modify_source_data
