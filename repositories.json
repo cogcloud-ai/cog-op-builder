@@ -48,7 +48,7 @@
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "1371693f0e09f3a6c48f1519363e36379db230e6"
+      "revision": "bd664d879571865d613e9e9a083b4f246afd5701"
     },
     {
       "name": "cog-workbench",
