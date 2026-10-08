@@ -14,7 +14,7 @@ these are preview integration pins, not a claim that the PRs have merged.
 | Author #1 | [Author #2](https://github.com/cogcloud-ai/cog-author/pull/2) | A stable revision request bound to accepted contract, candidate and actual review |
 | Designer #1 | [Designer #2](https://github.com/cogcloud-ai/cog-op-designer/pull/2) | Stable missing-Cog handoff and validated final Op from accepted children |
 | Verifier #1 | [Verifier #3](https://github.com/cogcloud-ai/cog-verify-candidate/pull/3) | Explicit isolated policy, bounded execution and retained failure observations |
-| ChatGPT #1 | [ChatGPT #2](https://github.com/cogcloud-ai/cog-chatgpt/pull/2) | Exact CLI/model qualification with opt-in live probes and safe reports |
+| ChatGPT #1 | [ChatGPT #2](https://github.com/cogcloud-ai/cog-chatgpt/pull/2) | Exact CLI and requested-model qualification with opt-in live probes and safe reports |
 | Claude #1 | [Claude #2](https://github.com/cogcloud-ai/cog-claude/pull/2) | The same qualification procedure for Claude Code |
 | Smith #7 | [Smith #17](https://github.com/cogcloud-ai/cog-smith/pull/17), already merged | Saved provider results, envelope replay and fixture export |
 
@@ -32,12 +32,17 @@ small independent Opportunity Shortlist example, documentation and exercises.
 
 ## Review and merge order
 
-1. Smith #19 → #20 → #21 (stacked bases); Workbench #4 → #5 (stacked bases).
+1. Workbench #4, then Smith #19 → #20 → #21; Workbench #5 follows #4.
+   Land the portable adapter consumers (Author, Evaluator, Brief Router) with
+   Workbench: old adapters cannot read the new relative records. Re-admit
+   existing providers and reactivate consumers after the fingerprint upgrade.
 2. Author, Designer, Candidate, Verifier, Evaluator and Brief Router companions;
    shared qualification source and both subscription copies can be reviewed together.
 3. Builder #4 after its companion APIs; tutorial #4 and the suite integration
    layer after the component changes. Refresh integration pins to the final
-   merged commits if squash/rebase changes their identities.
+   merged commits if squash/rebase changes their identities. Also remove the
+   preview suite checkout refs in Builder and all three provider workflows
+   once coordinated main contains these APIs; retain preview refs until then.
 
 No PR merges or release publication are performed by this change. The broader
 suite lifecycle umbrella contains additional roadmap issues outside this selected
@@ -47,11 +52,10 @@ usability set; this integration does not claim to close that entire umbrella.
 
 Start with the [Opportunity Shortlist guide](../examples/opportunity-shortlist/README.md):
 run one fictional decision Cog, then the offline Op with three opportunities,
-inspect the human Gate, save a decision and resume. Its fixtures are explicitly
-synthetic and tied to the complete question task, so learners do not mistake
+inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Saved Cog builds](https://github.com/cogcloud-ai/cog-workbench/blob/feat/durable-builder-studio/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/0ce2a46f8677bf819c3b3e3279def848776bd2b5/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
@@ -63,16 +67,21 @@ Advanced exercises:
   is bound into Author, packaging, verification and final acceptance. Explain
   why changing a review cannot change the accepted contract.
 - Use a deliberately failing authored fixture with the model-free cycle test.
-  Compare both candidate directories and reviews; identify the scoped revision
+  From an actual saved build, compare both candidate directories and reviews
+  (the automated cycle test cleans its temporary run on exit); identify the scoped revision
   receipt and the unchanged contract digest.
 - Interrupt a model-free build and resume it. Identify which passed steps were
   reused and which cost reservations survived; explain why a failed Gate retries.
 - Follow Designer's public `design-handoff prepare` example. Inspect its stable
-  missing IDs and `build_origin`; use actual accepted child Tracks to finalize
-  the Op. Try a rejected child or wrong proposal ID and explain the refusal.
+  missing IDs and `build_origin`; supply documents from actual accepted child Tracks to finalize
+  the Op. Finalize correlates supplied hash receipts; it does not read a terminal
+  Track or authenticate a reviewer. Try a rejected decision or wrong proposal ID and explain the refusal.
 - Replay the decision Cog's saved envelope using `pixi run replay -- --bundle
   BUNDLE --result ENVELOPE`. Use Smith's documented `export-fixtures` task for a
   real decision step after checking all inputs/results for sensitive information.
+  `replay` re-decides from the supplied result; it does not verify the envelope
+  belongs to the bundle. Pair them explicitly, then try a mismatched pair and
+  explain why this differs from the tutorial hash-bound `fixture` task.
 - Opt into Docker verification with a pinned image. Compare its policy receipt
   with trusted-local evidence, and inspect a retained timeout/output-limit result.
 - Run provider qualification only with an independently admitted binding and
@@ -103,3 +112,28 @@ The added native connected handoff passed separately; the final qualification
 timeout clarification passed its targeted tests in all three source copies.
 Component CI passed on Linux and macOS, including real Linux Docker checks.
 The final integration CI rerun verifies these combined published pins.
+
+## Review follow-up
+
+Review fixes preserve repeated decision flags, enforce cycle-child ownership,
+reconcile reservations with child attempts, retain terminal exhaustion and paused
+status on refusal, and preserve verification policies in every repair/evidence
+phase. Studio binds decisions to the displayed run/step/artifact and refuses a
+changed provider revision. Activation validates state before admission and emits
+commands selecting the actual Workbench manifest/state. The fingerprint upgrade
+requires explicit re-admission and consumer reactivation.
+
+Author retains original supplied materials/feedback and permits unrelated
+warning findings; error findings outside immutable repair paths still refuse.
+A new build with a reviewed wider scope is required. Criterion IDs guide the
+model; file scope and the accepted contract are the mechanical constraints.
+Evidence rounds currently repeat the planner question; model variation is their
+only source of a different plan. These limitations are stated in the Builder guide.
+
+Qualification reserves output before turns, checks the current behavior digest,
+covers all shared sources and README hashes, tests the opt-in CLI boundary, and
+uses a deterministic local process timeout. Moving requested-model aliases and
+actual model identity remain unverified. No credentialed live inference is run.
+Docker tests plant a host-only secret, inspect non-root/cgroup limits, exercise a
+0600 input-file mount, and check container removal after timeout. Raw bounded
+output is saved once; test evidence references its observation file.

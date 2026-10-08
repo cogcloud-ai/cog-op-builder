@@ -35,6 +35,11 @@ try:
  with patch.object(test_cycles.op_cycle,'start',side_effect=start):code,contract_pause=fixture.start()
  assert code==3,contract_pause
  code,candidate=fixture.resume(contract_pause,fixture.decide(contract_pause));assert code==3,candidate
+ assert candidate['attempts']==2,candidate
+ state=json.loads(Path(candidate['cycle']).read_text())
+ first_track=json.loads((Path(state['phases'][0]['run_dir'])/'track.json').read_text())
+ first_review=next(s for s in first_track['steps'] if s['id']=='review')
+ assert json.loads(Path(first_review['envelope']).read_text())['payload']['classification']=='revise'
  pending=fixture.pending(candidate);decision_path=fixture.decide(candidate)
  code,accepted=fixture.resume(candidate,decision_path);assert code==0,accepted
  track=json.loads((Path(candidate['run_dir'])/'track.json').read_text())

@@ -1646,10 +1646,10 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
     digest = cog_sha256 or cog_package_sha256(cog_dir)
     path = Path(path_for(number))
     attempts = []
-    if reserve is not None:
-        reserve(number, path, digest, list(attempts))
     if before_invoke:
         before_invoke()
+    if reserve is not None:
+        reserve(number, path, digest, list(attempts))
     envelope = invoke_cog(cog_dir, task, request_path, **seam)
     op_track.write_json(path, envelope)
     gate = gate_envelope(envelope)
@@ -1660,10 +1660,10 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
         number += 1
         digest = cog_package_sha256(cog_dir)
         path = Path(path_for(number))
-        if reserve is not None:
-            reserve(number, path, digest, list(attempts))
         if before_invoke:
             before_invoke()
+        if reserve is not None:
+            reserve(number, path, digest, list(attempts))
         envelope = invoke_cog(cog_dir, task, request_path, **seam)
         op_track.write_json(path, envelope)
         gate = gate_envelope(envelope)
@@ -2859,6 +2859,8 @@ def run(package_root, request_path, dry_run=False, runs_dir=None,
 
     track = op_track.new_track(spec, run_id, input_request,
                                status="planned" if dry_run else "running")
+    if cycle_policy:
+        track['cycle_owner'] = cycle_policy['owner']
     track["authority"] = ({"path": str(Path(authority_path).resolve()),
                            "sha256": sha256_file(authority_path)}
                           if authority_path else None)
@@ -3063,6 +3065,8 @@ def _refuse_pre_0_6_6(track):
 def _resume(package_root, run_dir, track_path, decision_path,
             authority_path, renew_budgets=None, cycle_policy=None):
     track = json.loads(track_path.read_text())
+    if track.get('cycle_owner') and (cycle_policy is None or cycle_policy.get('owner') != track['cycle_owner']):
+        raise op_spec.OpSpecError('This child belongs to a bounded cycle; use pixi run cycle -- --resume ' + track['cycle_owner'] + ' --decision DECISION_FILE.')
     spec = op_spec.load(package_root / "op.yaml")
     if spec.sha256() != track.get("spec_sha256"):
         raise op_spec.OpSpecError(

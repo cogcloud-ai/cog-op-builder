@@ -6,70 +6,70 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "a03009156cd6eea54405bffbb081afbd84cbb350"
+      "revision": "99cf4defe860abba8e1615b71bb9944c0302c947"
     },
     {
       "name": "cog-op-designer",
       "url": "https://github.com/cogcloud-ai/cog-op-designer.git",
       "role": "core",
       "description": "Propose Ops, reuse existing Cogs, and describe missing Cogs.",
-      "revision": "ac4809dcc6765f057818f060ed2568cec0c9ccc9"
+      "revision": "a1d1f4a7810e9e78fac162d4528e0702acc30053"
     },
     {
       "name": "cog-author",
       "url": "https://github.com/cogcloud-ai/cog-author.git",
       "role": "core",
       "description": "Turn briefs into contracts and author or revise Cog source.",
-      "revision": "8db7c5c9ac9d4db6cfa93eb2ad588a2cf418b574"
+      "revision": "43d1adeea872797f30abb3466d57c5a347098355"
     },
     {
       "name": "cog-build-evaluator",
       "url": "https://github.com/cogcloud-ai/cog-build-evaluator.git",
       "role": "core",
       "description": "Plan acceptance cases and review candidate-bound evidence.",
-      "revision": "c4a09b1eacfe30dd6cb4285c8af56a96c938fa5c"
+      "revision": "e7fa988f7720ac876f3cc6a356e91318aa22aa79"
     },
     {
       "name": "cog-build-candidate",
       "url": "https://github.com/cogcloud-ai/cog-build-candidate.git",
       "role": "core",
       "description": "Materialize validated authored source as a checked package.",
-      "revision": "21a7941d7f2ec45a57f6ffa906591d2f5d08d965"
+      "revision": "d01ba2708df6b86b7700e7fbc7351ba9d15a7d16"
     },
     {
       "name": "cog-verify-candidate",
       "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
       "role": "core",
       "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
-      "revision": "1d77fc7ed49be0ca58f85e473eaba82647b2f188"
+      "revision": "d7345d9c270dfad402482f6050ff7dd71d46a7d6"
     },
     {
       "name": "op-cog-builder",
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "91459f8051d48ad8d99da80dd8558885853570dc"
+      "revision": "b1815907dd14c463b563de5c929c718c11956ab9"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "5cadf64b49ef74d87e4419d3238af7b65bc94766"
+      "revision": "0ce2a46f8677bf819c3b3e3279def848776bd2b5"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "7a845705585169fcdb672019ee68054866fbbeeb"
+      "revision": "b36701882bf4a1f3d5f1c71ab05c0cff234e9f97"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "809a3a08fb002eb97328048fda53686087e1d0bf"
+      "revision": "12991c2475f5df0d16ac4b7f16c9e23999b39847"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "3e1553177536fc51fb1182fff22f89bb2b8a4b97"
+      "revision": "fea5f83a28ae1b6af3e273a96840fab249752f2a"
     },
     {
       "name": "cog-typesafe",
@@ -125,7 +125,7 @@
       "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
       "role": "example",
       "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
-      "revision": "c0493632fd21a4fb34826a8e76fb78786ce6a330"
+      "revision": "f667d90669af3ed192870f020a05c7933ffb1a2d"
     }
   ]
 }
