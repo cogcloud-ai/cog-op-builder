@@ -41,7 +41,7 @@ small independent Opportunity Shortlist example, documentation and exercises.
 3. Builder #4 after its companion APIs; tutorial #4 and the suite integration
    layer after the component changes. Refresh integration pins to the final
    merged commits if squash/rebase changes their identities. Also remove the
-   preview suite checkout refs in Builder and all three provider workflows
+   preview suite checkout refs in Builder, Smith, Workbench, Brief Router and all three provider workflows
    once coordinated main contains these APIs; retain preview refs until then.
 
 No PR merges or release publication are performed by this change. The broader
@@ -55,7 +55,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/0ce2a46f8677bf819c3b3e3279def848776bd2b5/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/0d89883dfb61cf34eca54275aa8fd6e7d1102760/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not

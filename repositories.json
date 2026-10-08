@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "99cf4defe860abba8e1615b71bb9944c0302c947"
+      "revision": "f7665e11abc8ac2631ca832a75eeda86258310aa"
     },
     {
       "name": "cog-op-designer",
@@ -48,28 +48,28 @@
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "b1815907dd14c463b563de5c929c718c11956ab9"
+      "revision": "994c7891fdff3864329025aa2af66f6761c3db01"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "0ce2a46f8677bf819c3b3e3279def848776bd2b5"
+      "revision": "0d89883dfb61cf34eca54275aa8fd6e7d1102760"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "b36701882bf4a1f3d5f1c71ab05c0cff234e9f97"
+      "revision": "eed013b43715ada0e2056436226dde3c2ebaf70f"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "12991c2475f5df0d16ac4b7f16c9e23999b39847"
+      "revision": "ea91b00c92a80da177835dcfe8a2bf0ff63d0af2"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "fea5f83a28ae1b6af3e273a96840fab249752f2a"
+      "revision": "0734eb63beb8f51dfe57e239f5946da564da3f14"
     },
     {
       "name": "cog-typesafe",
@@ -125,7 +125,7 @@
       "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
       "role": "example",
       "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
-      "revision": "f667d90669af3ed192870f020a05c7933ffb1a2d"
+      "revision": "6f2b2365f2d2f68b2ab24fdf0d721ac588e3105d"
     }
   ]
 }
