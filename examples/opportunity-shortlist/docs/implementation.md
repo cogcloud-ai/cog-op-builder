@@ -5,7 +5,7 @@
 All required example source, fictional data and teaching material live in the
 public coordinating repository. Dependencies are the suite's manifest-listed
 Cog Smith and, for optional live use, Workbench and a System One provider. No
-another checkout source, profile, provider answers, credentials or private notes are used.
+private source, profile, provider answers, credentials or private notes are used.
 
 The three Cog packages and both Op packages were generated with the checked-out
 Cog Smith corresponding to the suite manifest. Shared runtime files stay
