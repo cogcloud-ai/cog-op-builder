@@ -39,7 +39,7 @@ except ImportError:                                    # pragma: no cover
 
 #: The code-cog machinery lineage (cog-smith MACHINERY.md). Reported in
 #: every envelope's `binding`, so a saved result names the code that made it.
-MACHINERY_VERSION = "0.1.5"
+MACHINERY_VERSION = "0.2.0"
 
 GRANT_SCHEMA = "openteams/op-grant [0.1]"
 
@@ -388,43 +388,92 @@ def operations(grant, resource=None, action=None):
     return out
 
 
-def read_allowed(grant, target, resource="github", run_id=None, now=None):
-    """(ok, detail) for reading TARGET (e.g. a repository). The whole grant
-    is re-checked first: expiry and run binding hold per CALL, not per
-    invocation.
+#: What a granted read may touch is named `targets`: a repository, a site, a
+#: document store, an API. `repositories` is the name earlier grants use for
+#: the same list and is read as an alias (0.2.0).
+TARGET_KEYS = ("targets", "repositories")
 
-    `repositories` must be a LIST OF STRINGS. A grant that states a bare
+
+def declared_resource(resource=None):
+    """(resource, detail) — the resource a per-call check is made against.
+
+    RESOURCE when the caller names one; otherwise the resource of this Cog's
+    single declared `reaches` entry. There is no default: a Cog that
+    declares several resources, or none, names the one it means on every
+    check, so a forgotten `resource=` is a denial with a reason rather than
+    a check against a resource the Cog never meant."""
+    if resource is not None:
+        if isinstance(resource, str) and resource:
+            return resource, None
+        return None, (f"resource {resource!r} is not a resource name; a "
+                      f"check names its resource as a string")
+    declared = sorted({r.get("resource") for r in REACHES
+                       if isinstance(r, dict)
+                       and isinstance(r.get("resource"), str)})
+    if len(declared) == 1:
+        return declared[0], None
+    if not declared:
+        return None, (f"{SELF_ID['id']} declares no reaches, so a check has "
+                      f"no resource to default to; pass resource=")
+    return None, (f"{SELF_ID['id']} declares reaches {declared}, so a check "
+                  f"has no single resource to default to; pass resource=")
+
+
+def read_allowed(grant, target, resource=None, run_id=None, now=None):
+    """(ok, detail) for reading TARGET (a repository, a site, a document
+    store). The whole grant is re-checked first: expiry and run binding hold
+    per CALL, not per invocation.
+
+    RESOURCE defaults to this Cog's single declared `reaches` entry and is
+    required when there are several (`declared_resource`).
+
+    `targets` must be a LIST OF STRINGS. A grant that states a bare
     string is refused by name — never membership-tested, which would
     authorize every substring of it — and any other type is refused rather
     than raising."""
     ok, detail = _usable(grant, run_id, now)
     if not ok:
         return False, detail
+    resource, detail = declared_resource(resource)
+    if resource is None:
+        return False, detail
     if not isinstance(target, str) or not target:
         return False, (f"{resource} read of {target!r}: a read names one "
                        f"target as a string")
     for op in operations(grant, resource, "read"):
-        repositories = op.get("repositories")
-        if repositories is None:
-            continue
-        if not isinstance(repositories, list) or any(
-                not isinstance(r, str) for r in repositories):
+        if all(key in op for key in TARGET_KEYS):
             return False, (f"the grant's {resource} read operation declares "
-                           f"repositories {repositories!r}; a granted read "
-                           f"names a LIST of repository strings, and this "
+                           f"both targets and repositories; repositories is "
+                           f"the earlier name for targets, and a granted "
+                           f"read states one of them")
+        targets = op.get("targets", op.get("repositories"))
+        if targets is None:
+            continue
+        if not isinstance(targets, list) or any(
+                not isinstance(t, str) for t in targets):
+            return False, (f"the grant's {resource} read operation declares "
+                           f"targets {targets!r}; a granted read "
+                           f"names a LIST of target strings, and this "
                            f"Cog reads no other shape")
-        if target in repositories:
+        if target in targets:
             return True, None
     return False, (f"{resource} read of {target!r} is not in this grant")
 
 
-def approved_change(grant, change_id, resource="github"):
+def approved_change(grant, change_id, resource=None):
     """The grant's entry for CHANGE_ID, or None. The grant carries exactly
     the changes a human approved: a change that is not in it is denied, and
     that is the whole check — never a trim of what was requested.
 
+    RESOURCE defaults to this Cog's single declared `reaches` entry; with
+    several (or none) and no RESOURCE this raises ValueError, because None
+    here would read as "never approved".
+
     A `changes` that is not a list of objects contributes nothing: it is not
     iterated blindly, so a malformed grant denies rather than raising."""
+    resource, detail = declared_resource(resource)
+    if resource is None:
+        raise ValueError(detail)
     for op in operations(grant, resource, "write"):
         changes = op.get("changes")
         if not isinstance(changes, list):
@@ -436,8 +485,11 @@ def approved_change(grant, change_id, resource="github"):
 
 
 def write_allowed(grant, change_id, target_sha256, content_sha256=None,
-                  resource="github", run_id=None, now=None):
+                  resource=None, run_id=None, now=None):
     """(ok, detail) for writing CHANGE_ID.
+
+    RESOURCE defaults to this Cog's single declared `reaches` entry and is
+    required when there are several (`declared_resource`).
 
     TWO hashes, and neither may be null:
 
@@ -452,6 +504,9 @@ def write_allowed(grant, change_id, target_sha256, content_sha256=None,
     """
     ok, detail = _usable(grant, run_id, now)
     if not ok:
+        return False, detail
+    resource, detail = declared_resource(resource)
+    if resource is None:
         return False, detail
     change = approved_change(grant, change_id, resource)
     if change is None:
@@ -587,23 +642,29 @@ def invoke(bundle, grant=None, journal=None, run_id=None, task=DEFAULT_TASK,
     import time
     started = time.monotonic()
 
-    problems = validate_input(bundle)
-    if problems:
+    input_problems = validate_input(bundle)
+    refusing = [p for p in input_problems if p.get("severity") not in ("warning", "warn")]
+    if refusing:
         env = _fail(task, "invalid-input",
-                    "; ".join(p["detail"] for p in problems[:5]))
-        env["problems"] = problems
+                    "; ".join(p["detail"] for p in refusing[:5]))
+        env["problems"] = input_problems
+        return env
+
+    def fail(*args, **kwargs):
+        env = _fail(*args, **kwargs)
+        env["problems"] = input_problems + env["problems"]
         return env
 
     if REACHES and grant is None:
-        return _fail(task, "no-grant",
-                     f"{SELF_ID['id']} declares reaches "
-                     f"{[r.get('resource') for r in REACHES]} and was invoked "
-                     f"with no grant; a code Cog does not reach outside the "
-                     f"run without one")
+        return fail(task, "no-grant",
+                    f"{SELF_ID['id']} declares reaches "
+                    f"{[r.get('resource') for r in REACHES]} and was invoked "
+                    f"with no grant; a code Cog does not reach outside the "
+                    f"run without one")
     if grant is not None:
         code, detail = check_grant(grant, run_id=run_id, now=now)
         if code:
-            return _fail(task, code, detail)
+            return fail(task, code, detail)
     _INVOCATION_RUN_ID = run_id
 
     # The journal is read BEFORE any work: a journal this Cog cannot read in
@@ -618,23 +679,23 @@ def invoke(bundle, grant=None, journal=None, run_id=None, task=DEFAULT_TASK,
         try:
             journal.read()
         except JournalCorrupt as exc:
-            return _fail(task, "journal-corrupt", str(exc))
+            return fail(task, "journal-corrupt", str(exc))
         except OSError as exc:
-            return _fail(task, "journal-unreadable",
-                         f"{journal.path} cannot be read "
-                         f"({type(exc).__name__}: {exc}); a Cog that cannot "
-                         f"read its journal cannot know what it already did "
-                         f"outside the run, and does nothing")
+            return fail(task, "journal-unreadable",
+                        f"{journal.path} cannot be read "
+                        f"({type(exc).__name__}: {exc}); a Cog that cannot "
+                        f"read its journal cannot know what it already did "
+                        f"outside the run, and does nothing")
 
     try:
         result = task_logic.run(bundle, grant, journal)
     except JournalCorrupt as exc:
-        return _fail(task, "journal-corrupt", str(exc))
+        return fail(task, "journal-corrupt", str(exc))
     except Exception as exc:                            # the task's own bug
-        return _fail(task, "task-failed", f"{type(exc).__name__}: {exc}")
+        return fail(task, "task-failed", f"{type(exc).__name__}: {exc}")
     if (not isinstance(result, tuple) or len(result) != 2):
-        return _fail(task, "task-failed",
-                     "task_logic.run must return (payload, problems)")
+        return fail(task, "task-failed",
+                    "task_logic.run must return (payload, problems)")
     payload, task_problems = result
     # The package's output checker runs inside the SAME exception boundary as
     # `run`: a checker that trips over a payload it did not
@@ -642,11 +703,11 @@ def invoke(bundle, grant=None, journal=None, run_id=None, task=DEFAULT_TASK,
     # It gets its own code because "the task is broken" and "the task's
     # self-check is broken" are different repairs.
     try:
-        problems = list(task_problems or []) + validate_output(payload, bundle)
+        problems = input_problems + list(task_problems or []) + validate_output(payload, bundle)
     except JournalCorrupt as exc:
-        return _fail(task, "journal-corrupt", str(exc))
+        return fail(task, "journal-corrupt", str(exc))
     except Exception as exc:                    # the package's own checker
-        return _fail(task, "output-check-failed",
-                     f"{type(exc).__name__}: {exc}")
+        return fail(task, "output-check-failed",
+                    f"{type(exc).__name__}: {exc}")
     return _envelope(task, True, payload=payload, problems=problems,
                      latency=round(time.monotonic() - started, 3))
