@@ -98,7 +98,7 @@ class LiveAdapterTests(unittest.TestCase):
     def test_changed_consumer_refuses_execution(self):
         with (self.clone / 'context/questions.json').open('a') as f:
             f.write('\n')
-        with self.assertRaisesRegex(ValueError, 'recompose'):
+        with self.assertRaisesRegex(ValueError, 'recompose|activate-composition'):
             self.invoke()
 
     def test_changed_host_requires_reactivation(self):
