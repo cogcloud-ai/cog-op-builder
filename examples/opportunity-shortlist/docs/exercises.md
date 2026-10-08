@@ -4,6 +4,9 @@ Work from `examples/opportunity-shortlist`. Complete the [setup](../README.md)
 first. The core exercises need no account or provider. Use your own name or
 `learner` for `--by`; it is a recorded label, not an authenticated identity.
 
+Put edited request copies under the ignored `var/` directory (`mkdir -p var`).
+Use paths such as `var/my-request.json` when invoking them.
+
 Try to predict each result before running it. [Answers](answers.md) are available
 for checking your reasoning.
 

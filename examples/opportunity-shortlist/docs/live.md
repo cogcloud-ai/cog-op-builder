@@ -65,7 +65,7 @@ specification. A source edit while a run is paused can affect recovery; inspect
 the shared runtime's findings instead of treating approval as fresh execution.
 
 The same typed interface can use a separately admitted LLM through
-[cog-system-one-adapter](../../../../cog-system-one-adapter/README.md).
+[cog-system-one-adapter](https://github.com/cogcloud-ai/cog-system-one-adapter/blob/main/README.md).
 Follow that provider's documented binding path, then activate the fit Cog with
 the resulting binding. The example itself does not substitute providers. Treat
 LLM-stated probability values according to their source; neither the workshop
