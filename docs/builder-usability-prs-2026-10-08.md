@@ -95,3 +95,11 @@ public synthetic candidate through native packaging/verification, accepts that
 exact child, then passes its real saved documents through Designer finalization
 and validates the resulting executable Op. No fixture source is private or
 read from a previous ignored run.
+
+Verification: the combined suite and a fresh public checkout each passed 1,334
+model-free tests (including the documented skips), plus nine workspace safeguard
+tests. The fresh checkout passed strict pin/cleanliness and boundary checks.
+The added native connected handoff passed separately; the final qualification
+timeout clarification passed its targeted tests in all three source copies.
+Component CI passed on Linux and macOS, including real Linux Docker checks.
+The final integration CI rerun verifies these combined published pins.
