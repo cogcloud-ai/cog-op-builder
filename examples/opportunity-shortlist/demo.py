@@ -68,7 +68,11 @@ def show_run(run_dir, track):
             print(f"  {row['opportunity_id']}  {row['recommendation']:7}  {row['score']:.2f}  {row['title']}")
         print('\nChoices awaiting your decision: ' + ', '.join(change['change_id'] for change in pending['payload']['changes']))
         print('Review: ' + str(run_dir / 'pending/shortlist.md'))
-        print('Choose explicitly, for example: pixi run decide -- --approve OPP-001 --reject-rest --by learner')
+        choices = pending['payload']['changes']
+        if choices:
+            print(f"Choose explicitly, for example: pixi run decide -- --approve {choices[0]['change_id']} --reject-rest --by learner")
+        else:
+            print('Choose explicitly: pixi run decide -- --reject-all --by learner')
     elif track['status'].startswith('completed'):
         print('\nFinal human choices:')
         for verdict in ('approved', 'rejected'):

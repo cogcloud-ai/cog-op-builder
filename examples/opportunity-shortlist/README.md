@@ -101,7 +101,7 @@ provider. Suite verification also runs these checks.
 
 Environment setup uses the committed locks on macOS Apple Silicon and Linux
 x86-64. It needs package-download access. Source, fictional fixtures and guides
-are all inside this public repository; no Contracto checkout is required.
+are all inside this public repository; no another checkout checkout is required.
 
 Local run artifacts, decision inputs, binding activation and environments are
 ignored. Start a new run for a changed input; `resume` continues an existing run.
