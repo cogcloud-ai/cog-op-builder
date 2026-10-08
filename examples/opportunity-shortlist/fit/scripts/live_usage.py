@@ -9,9 +9,12 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = ROOT.parents[3] / 'cog-workbench'
+HOST = next((parent / 'cog-workbench' for parent in ROOT.parents
+             if (parent / 'cog-workbench/src/workbench_suite.py').is_file()), None)
 
 def invoke(bundle):
+    if HOST is None:
+        raise ValueError('Install the public Workbench sibling in the example workspace.')
     sys.path.insert(0, str(HOST / 'src'))
     from workbench_suite import Suite, digest, package_digest, require
     config = json.loads((ROOT / '.op-composition.json').read_text())
@@ -19,8 +22,9 @@ def invoke(bundle):
     require(checksum == digest(config), 'Installed composition integrity failure.')
     require(config['host_sha256'] == package_digest(HOST), 'Workbench changed; activate composition again.')
     composition = config['composition']
-    require(Path(composition['path']).resolve() == ROOT, 'Installed composition belongs to another consumer.')
-    result = Suite(workspace=HOST.parent, state=config['state']).invoke(composition, bundle)
+    suite = Suite(workspace=HOST.parent, state=HOST.parent / config['state'])
+    require(suite.root(composition['path']) == ROOT, 'Installed composition belongs to another consumer.')
+    result = suite.invoke(composition, bundle)
     result['task'] = 'ask-composed'
     return result
 
