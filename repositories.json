@@ -62,14 +62,14 @@
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "585034fc0582b383698b52d6bf0cacb772a117c0"
+      "revision": "7a845705585169fcdb672019ee68054866fbbeeb"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "ac80d270396d192a2b1bb0e5b45a6f11dc592bf0"
+      "revision": "809a3a08fb002eb97328048fda53686087e1d0bf"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "6a70845390e50ebedab0cfff29ae16fd38b767df"
+      "revision": "3e1553177536fc51fb1182fff22f89bb2b8a4b97"
     },
     {
       "name": "cog-typesafe",
