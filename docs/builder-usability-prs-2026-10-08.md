@@ -89,3 +89,9 @@ Provider readiness passed on macOS arm64 for Codex 0.161.0 and Claude Code
 2.1.293. Credentialed live model qualification remains an explicit opt-in
 procedure and was not run for these PRs. The static public boundary scan retains
 40 individually recorded legacy occurrences and adds none.
+
+The full suite also runs `scripts/check_connected_handoff.py`: it repairs a failing
+public synthetic candidate through native packaging/verification, accepts that
+exact child, then passes its real saved documents through Designer finalization
+and validates the resulting executable Op. No fixture source is private or
+read from a previous ignored run.

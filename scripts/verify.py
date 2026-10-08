@@ -27,6 +27,11 @@ def main():
         if result.returncode:
             failed.append(name)
     if not args.package:
+        print('\nTesting connected accepted-child handoff', flush=True)
+        result = subprocess.run([str(args.workspace.resolve() / 'op-cog-builder/.pixi/envs/default/bin/python'),
+                                 str(SUITE / 'scripts/check_connected_handoff.py'), '--workspace', str(args.workspace.resolve())])
+        if result.returncode:
+            failed.append('connected accepted-child handoff')
         tutorial = args.workspace.resolve() / SUITE.name / 'examples/opportunity-shortlist'
         print('\nTesting Opportunity Shortlist learning example', flush=True)
         for task in ('setup', 'check', 'test'):
