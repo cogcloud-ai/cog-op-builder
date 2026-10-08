@@ -55,7 +55,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/1bf17d371e452417221b5ebac47acfb8cb47deba/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/1dc1b426a4f2f355054d48c6361f5548d4f41ab4/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
@@ -111,7 +111,8 @@ tests. The fresh checkout passed strict pin/cleanliness and boundary checks.
 The added native connected handoff passed separately; the final qualification
 timeout clarification passed its targeted tests in all three source copies.
 Initial implementation CI passed on Linux and macOS, including real Linux Docker checks.
-Current review-fix CI is pending; the new Docker regressions require that run.
+The review-fix Docker regressions passed on Linux at Verifier d7345d9;
+remaining final integration CI jobs are still pending.
 The final integration CI rerun verifies these combined published pins.
 
 ## Review follow-up
@@ -138,3 +139,12 @@ actual model identity remain unverified. No credentialed live inference is run.
 Docker tests plant a host-only secret, inspect non-root/cgroup limits, exercise a
 0600 input-file mount, and check container removal after timeout. Raw bounded
 output is saved once; test evidence references its observation file.
+
+Review verification: the working suite and a clean public checkout passed
+full model-free verification; the clean run reports 1,364 tests. After the final
+reservation-cost regression, the fresh Smith suite passed 697 tests, the native
+Builder passed 18, the tutorial passed all checks and 13 tests, and the Studio
+restore regression passed. Nine workspace safeguard tests and strict clean/pin
+boundary checks passed. All six modified Cog packages passed Smith checking
+with tests. The connected native repair/finalization check passed on final pins.
+Linux CI passed the new Docker secret, limits, input-mount and removal checks.
