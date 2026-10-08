@@ -55,7 +55,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/0d89883dfb61cf34eca54275aa8fd6e7d1102760/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/1bf17d371e452417221b5ebac47acfb8cb47deba/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
@@ -110,7 +110,8 @@ model-free tests (including the documented skips), plus nine workspace safeguard
 tests. The fresh checkout passed strict pin/cleanliness and boundary checks.
 The added native connected handoff passed separately; the final qualification
 timeout clarification passed its targeted tests in all three source copies.
-Component CI passed on Linux and macOS, including real Linux Docker checks.
+Initial implementation CI passed on Linux and macOS, including real Linux Docker checks.
+Current review-fix CI is pending; the new Docker regressions require that run.
 The final integration CI rerun verifies these combined published pins.
 
 ## Review follow-up

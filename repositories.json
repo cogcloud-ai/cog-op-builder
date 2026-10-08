@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "f7665e11abc8ac2631ca832a75eeda86258310aa"
+      "revision": "0f63c03c2d5ac837de4f1ec6b73bfd79811b87f0"
     },
     {
       "name": "cog-op-designer",
@@ -48,14 +48,14 @@
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "994c7891fdff3864329025aa2af66f6761c3db01"
+      "revision": "8b4bd8142394174594a01dd4eca66d1929681b20"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "0d89883dfb61cf34eca54275aa8fd6e7d1102760"
+      "revision": "1bf17d371e452417221b5ebac47acfb8cb47deba"
     },
     {
       "name": "cog-chatgpt",

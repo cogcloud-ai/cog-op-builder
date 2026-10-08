@@ -230,6 +230,10 @@ def resume(package, directory, decision=None):
         expected = {key: op_spec.evaluate(spec.doc['cycle'][key], {'inputs': spec.build_inputs(state['request']), 'steps': {}}) for key in ('max_attempts', 'max_cost_units')}
         if any(state[key] != value for key, value in expected.items()) or state['configuration'] != spec.doc['cycle'] or state['cost_units_reserved'] != sum(row['units'] for row in state['reservations']):
             raise op_spec.OpSpecError('Cycle limits or reservation ledger changed; inspect the saved cycle.')
+        costs = state['configuration']['costs']
+        for row in state['reservations']:
+            if row.get('step') not in costs or type(row.get('units')) is not int or row['units'] != costs[row['step']] or type(row.get('phase')) is not int or not 1 <= row['phase'] <= len(state['phases']):
+                raise op_spec.OpSpecError('Cycle reservation units or phase differ from the declared policy.')
         from collections import Counter
         recorded = Counter((row['phase'], row['step']) for row in state['reservations'])
         for phase in state['phases']:
