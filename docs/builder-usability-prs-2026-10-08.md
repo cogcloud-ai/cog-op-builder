@@ -182,3 +182,14 @@ started checks and checks actual supervisor child-process termination.
 Component CI preview refs may pin an earlier API snapshot. Final combined
 compatibility is established by this coordinator's published pins and fresh
 strict verification, rather than by component CI alone.
+
+Second review verification: a clean public checkout at `ec32ca4` passed all
+1391 reported model-free tests (including documented skips), tutorial
+checks and the connected native repair/finalization handoff. Smith reports 699,
+Author 35, Builder 22, Workbench 97, and each provider 119 tests. Nine workspace
+safeguard tests and strict clean/pin/boundary checks passed; the inventory remains
+40 recorded occurrences. All six changed Cog packages passed Smith checks with
+tests and no findings. Verifier Linux and macOS CI passed at `2540bf9`, with all
+eight real Linux confinement tests including actual container absence. Other
+updated component Linux jobs passed; the final integration/macOS reruns are
+still running or queued at this snapshot. No paid inference or PR merges.
