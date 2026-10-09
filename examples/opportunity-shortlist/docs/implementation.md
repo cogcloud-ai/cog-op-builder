@@ -4,7 +4,8 @@
 
 All required example source, fictional data and teaching material live in the
 public coordinating repository. Dependencies are the suite's manifest-listed
-Cog Smith and, for optional live use, Workbench and a System One provider. No
+Cog Smith, plus Workbench and TypeSafe for offline tests; a System One
+provider is needed only for optional live use. No
 private source, profile, provider answers, credentials or private notes are used.
 
 The three Cog packages and both Op packages were generated with the checked-out
