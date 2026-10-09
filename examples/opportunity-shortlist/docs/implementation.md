@@ -90,3 +90,7 @@ human-supplied `decided_by` is not authenticated identity. Trusted local package
 code executes with the owner's authority. The example has no installed-package
 catalog, GUI, real opportunity sources, documents, proposal writing, or release
 publication. Those can be taught after the small workflow is understood.
+
+Offline CLI tests import public Workbench and TypeSafe machinery from the
+manifest-listed sibling checkouts. Install the suite before running them; live
+providers and credentials are optional.
