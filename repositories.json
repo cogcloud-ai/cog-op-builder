@@ -6,14 +6,14 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "e589bbdd23ea1e6e50851afa70dd6627d86ca3dc"
+      "revision": "c7d3e665f66e80ac8a25ad11b902e5b183d1b2e9"
     },
     {
       "name": "cog-op-designer",
       "url": "https://github.com/cogcloud-ai/cog-op-designer.git",
       "role": "core",
       "description": "Propose Ops, reuse existing Cogs, and describe missing Cogs.",
-      "revision": "78f65fe4d54c27133d392466fca38036c9c7f7a4"
+      "revision": "e5143d596be42ad243c59207bdd683deb6d1c301"
     },
     {
       "name": "cog-author",
@@ -41,35 +41,35 @@
       "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
       "role": "core",
       "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
-      "revision": "2540bf9dc240ef16a0c42c00ce076e1eead6098a"
+      "revision": "2a2b635fc4d424c05ae5bfba0bed4d2690b11467"
     },
     {
       "name": "op-cog-builder",
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design → contract Gate → author → materialize → plan → verify → review → candidate Gate.",
-      "revision": "2cec8529da5069fec8f29877bcd0d9dc696c5940"
+      "revision": "9f6f839103997ee8dfda952f2539f4d3041f516e"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "5cb2ceda7a033784a35e574ab30fc50982367153"
+      "revision": "c3142df88fb17b9506653012b71fe2f200f93380"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user’s ChatGPT login.",
-      "revision": "1d5bc445ef1ed6c06675907d874514fe400bb913"
+      "revision": "27c75b3aaaec937ed37dca7344807cd8ceabf54c"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user’s Claude login.",
-      "revision": "f4b69f0c970531e5278ce6954618ce8f422ab317"
+      "revision": "e5155e28904150287b779f6480b34336177d2b1c"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "2ad286ce1eff44a2e5db0353118bbb76255bb733"
+      "revision": "7598f3b6d0c606195e2a21791efe0cbcee2617f1"
     },
     {
       "name": "cog-typesafe",

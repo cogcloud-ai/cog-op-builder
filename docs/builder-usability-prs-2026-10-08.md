@@ -56,7 +56,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/1dc1b426a4f2f355054d48c6361f5548d4f41ab4/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/c3142df88fb17b9506653012b71fe2f200f93380/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
@@ -117,7 +117,8 @@ Initial implementation verification: the combined suite and a fresh public check
 model-free tests (including the documented skips), plus nine workspace safeguard
 tests. The fresh checkout passed strict pin/cleanliness and boundary checks.
 The added native connected handoff passed separately; the final qualification
-timeout clarification passed its targeted tests in all three source copies.
+timeout clarification passed in both subscription copies; shared Turn Harness
+skips subscription-only tests by design. Supervisor termination runs in all three.
 Initial implementation CI passed on Linux and macOS, including real Linux Docker checks.
 The review-fix Docker regressions passed on Linux at Verifier d7345d9;
 Round-one final integration CI at `1622260` passed Linux and macOS
@@ -147,16 +148,17 @@ uses a deterministic local process timeout. Moving requested-model aliases and
 actual model identity remain unverified. No credentialed live inference is run.
 Docker tests plant a host-only secret, inspect non-root/cgroup limits, exercise a
 0600 input-file mount, and check container removal after timeout. Raw bounded
-output is saved once; test evidence references its observation file and now
-includes bounded stdout/stderr tails for repair review.
+output is retained in execution observations, check records and the returned
+test payload; evidence references its record and repeats bounded stdout/stderr
+excerpts per linked criterion for repair review.
 
-Review verification: the working suite and a clean public checkout passed
+First review verification (at `1622260`): the working suite and a clean public checkout passed
 full model-free verification; the clean run reports 1,364 tests. After the final
 reservation-cost regression, the fresh Smith suite passed 697 tests, the native
 Builder passed 18, the tutorial passed all checks and 13 tests, and the Studio
 restore regression passed. Nine workspace safeguard tests and strict clean/pin
 boundary checks passed. All six modified Cog packages passed Smith checking
-with tests. The connected native repair/finalization check passed on final pins.
+with tests. The connected native repair/finalization check passed on those pins.
 Linux CI passed the new Docker secret, limits, input-mount and removal checks.
 
 ## Second review follow-up
@@ -190,6 +192,34 @@ Author 35, Builder 22, Workbench 97, and each provider 119 tests. Nine workspace
 safeguard tests and strict clean/pin/boundary checks passed; the inventory remains
 40 recorded occurrences. All six changed Cog packages passed Smith checks with
 tests and no findings. Verifier Linux and macOS CI passed at `2540bf9`, with all
-eight real Linux confinement tests including actual container absence. Other
-updated component Linux jobs passed; the final integration/macOS reruns are
-still running or queued at this snapshot. No paid inference or PR merges.
+eight Verifier tests ran unskipped on Linux, including the one real-container
+test (secret exclusion, limits, input mount and container absence). Integration
+CI at `ec32ca4` and `5058cea` (these pins) passed on Linux and macOS: 1,391 tests
+plus nine safeguards. The component PR heads in that review round passed on
+both platforms. No paid inference or PR merges.
+
+## Third review follow-up
+
+Op machinery 0.9.3 clears a recoverable failure reason before retrying; successful
+paused/completed summaries no longer show an old error. Smith tests cover both
+recovery and terminal error codes wrapped by a nonzero process failure. Builder
+and tutorial copies remain byte-identical to those masters.
+
+Workbench keeps native steps, Gates and evidence readable when an admission
+receipt is lost, reports a separate binding problem and disables continuation.
+It checks a returned cycle's original input identity and refuses unsupported
+legacy continuation. The linked saved-build guide now includes recovery guidance.
+
+Verification excerpts include truncation flags and retained character counts;
+a Verifier-owned test packages and executes a genuinely failing candidate and
+checks its diagnostics in review evidence. Output is also retained in check
+records and payloads, and excerpts repeat per criterion. Designer tests carry
+the public example through finalization with synthetic matching receipts and
+check structured CLI errors for invalid package paths.
+
+Qualification handles SIGTERM as well as SIGINT, terminates its supervised
+process group on interruption, removes incomplete output and tests actual signal
+cleanup with child processes. It cannot refund already spent inference or run
+cleanup after SIGKILL/power loss. Tests distinguish a wrong-model preflight
+failure from a failure after the first check. Readiness matrices remain dated
+records rather than qualifications of newer installed CLI versions.

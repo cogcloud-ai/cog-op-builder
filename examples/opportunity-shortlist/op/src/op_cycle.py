@@ -157,7 +157,9 @@ def drive(package, directory, state, phases, decision=None):
                 save(state, directory)
                 return (0 if state['status'] in ('completed', 'completed-with-problems') else 1), summary(state, directory, {'outputs': track.get('outputs')})
             prior_status = state['status']
-            state['status'] = 'running'; save(state, directory)
+            state['status'] = 'running'
+            state.pop('reason', None)
+            save(state, directory)
             try:
                 if phase['run_dir']:
                     op_track.contained(Path(phase['run_dir']), directory)
