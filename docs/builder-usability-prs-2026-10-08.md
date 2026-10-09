@@ -56,7 +56,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/c3142df88fb17b9506653012b71fe2f200f93380/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/e03de1e7ffd58fb05f4021886a187c4db9c23619/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
