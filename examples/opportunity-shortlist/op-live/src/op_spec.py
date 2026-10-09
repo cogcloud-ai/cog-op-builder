@@ -1147,8 +1147,8 @@ def cycle_phases(doc):
     """Validate declarative bounded transitions and every expanded phase spec."""
     cycle = doc.get('cycle')
     required = {'outcome_step', 'outcome_field', 'max_attempts', 'max_cost_units', 'costs', 'transitions'}
-    if not isinstance(cycle, dict) or set(cycle) != required:
-        raise OpSpecError('cycle must declare exactly ' + ', '.join(sorted(required)))
+    if not isinstance(cycle, dict) or not required <= set(cycle) or set(cycle) - required - {'terminal_errors'}:
+        raise OpSpecError('cycle must declare required fields (and optional terminal_errors): ' + ', '.join(sorted(required)))
     base = copy.deepcopy(doc); base.pop('cycle')
     ordered = validate(base)
     base['steps'] = ordered
@@ -1193,6 +1193,9 @@ def cycle_phases(doc):
     costs = cycle['costs']
     if not isinstance(costs, dict) or set(costs) != all_ids or any(type(value) is not int or value < 0 for value in costs.values()):
         raise OpSpecError('cycle costs must declare nonnegative integer reservation units for every phase step.')
+    terminal_errors = cycle.get('terminal_errors', {})
+    if not isinstance(terminal_errors, dict) or not set(terminal_errors) <= all_ids or any(not isinstance(codes, list) or not codes or any(not isinstance(code, str) or not code for code in codes) or len(set(codes)) != len(codes) for codes in terminal_errors.values()):
+        raise OpSpecError('cycle terminal_errors maps declared steps to distinct nonempty envelope error codes.')
     for key in ('max_attempts', 'max_cost_units'):
         problems = []
         _expr_problems(cycle[key], 'cycle.' + key, {value['name'] for value in base.get('inputs', [])}, set(), set(), set(), problems, set())

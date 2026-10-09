@@ -32,13 +32,14 @@ small independent Opportunity Shortlist example, documentation and exercises.
 
 ## Review and merge order
 
-1. Workbench #4, then Smith #19 → #20 → #21; Workbench #5 follows #4.
+1. Workbench #4, then Smith #19 → #20 → #21.
    Land the portable adapter consumers (Author, Evaluator, Brief Router) with
    Workbench: old adapters cannot read the new relative records. Re-admit
    existing providers and reactivate consumers after the fingerprint upgrade.
-2. Author, Designer, Candidate, Verifier, Evaluator and Brief Router companions;
+2. Designer, Candidate and Verifier companions;
    shared qualification source and both subscription copies can be reviewed together.
-3. Builder #4 after its companion APIs; tutorial #4 and the suite integration
+3. Builder #4 after its companion APIs, then Workbench #5 after Builder #4
+   and Smith #21. Tutorial #4 and the suite integration
    layer after the component changes. Refresh integration pins to the final
    merged commits if squash/rebase changes their identities. Also remove the
    preview suite checkout refs in Builder, Smith, Workbench, Brief Router and all three provider workflows
@@ -70,15 +71,22 @@ Advanced exercises:
   From an actual saved build, compare both candidate directories and reviews
   (the automated cycle test cleans its temporary run on exit); identify the scoped revision
   receipt and the unchanged contract digest.
-- Interrupt a model-free build and resume it. Identify which passed steps were
+- Interrupt a model-free build and resume it. Run the documented model-free interruption fixture in the Builder guide.
+  Identify which passed steps were
   reused and which cost reservations survived; explain why a failed Gate retries.
 - Follow Designer's public `design-handoff prepare` example. Inspect its stable
   missing IDs and `build_origin`; supply documents from actual accepted child Tracks to finalize
   the Op. Finalize correlates supplied hash receipts; it does not read a terminal
-  Track or authenticate a reviewer. Try a rejected decision or wrong proposal ID and explain the refusal.
+  Track or authenticate a reviewer. Try a rejected decision or wrong proposal ID and explain the refusal. Editing
+  only a decision verdict is undetected; explain why these receipts do not
+  authenticate a reviewer.
 - Replay the decision Cog's saved envelope using `pixi run replay -- --bundle
   BUNDLE --result ENVELOPE`. Use Smith's documented `export-fixtures` task for a
   real decision step after checking all inputs/results for sensitive information.
+  Make an ignored practice copy of the decision Cog first, excluding `.pixi`,
+  `var`, `runs`, `.op-composition.json`, `model.json` and binding records. Export
+  into that copy so learning does not modify the pinned package or invalidate
+  active bindings. Do not commit or publish exported personal inputs.
   `replay` re-decides from the supplied result; it does not verify the envelope
   belongs to the bundle. Pair them explicitly, then try a mismatched pair and
   explain why this differs from the tutorial hash-bound `fixture` task.
@@ -105,15 +113,16 @@ exact child, then passes its real saved documents through Designer finalization
 and validates the resulting executable Op. No fixture source is private or
 read from a previous ignored run.
 
-Verification: the combined suite and a fresh public checkout each passed 1,334
+Initial implementation verification: the combined suite and a fresh public checkout each passed 1,334
 model-free tests (including the documented skips), plus nine workspace safeguard
 tests. The fresh checkout passed strict pin/cleanliness and boundary checks.
 The added native connected handoff passed separately; the final qualification
 timeout clarification passed its targeted tests in all three source copies.
 Initial implementation CI passed on Linux and macOS, including real Linux Docker checks.
 The review-fix Docker regressions passed on Linux at Verifier d7345d9;
-remaining final integration CI jobs are still pending.
-The final integration CI rerun verifies these combined published pins.
+Round-one final integration CI at `1622260` passed Linux and macOS
+(1,365 tests plus nine safeguards). This records that earlier head; new review
+changes require fresh verification and CI.
 
 ## Review follow-up
 
@@ -138,7 +147,8 @@ uses a deterministic local process timeout. Moving requested-model aliases and
 actual model identity remain unverified. No credentialed live inference is run.
 Docker tests plant a host-only secret, inspect non-root/cgroup limits, exercise a
 0600 input-file mount, and check container removal after timeout. Raw bounded
-output is saved once; test evidence references its observation file.
+output is saved once; test evidence references its observation file and now
+includes bounded stdout/stderr tails for repair review.
 
 Review verification: the working suite and a clean public checkout passed
 full model-free verification; the clean run reports 1,364 tests. After the final
@@ -148,3 +158,27 @@ restore regression passed. Nine workspace safeguard tests and strict clean/pin
 boundary checks passed. All six modified Cog packages passed Smith checking
 with tests. The connected native repair/finalization check passed on final pins.
 Linux CI passed the new Docker secret, limits, input-mount and removal checks.
+
+## Second review follow-up
+
+Chained revisions keep the original materials once and replace the superseded
+review. Original feedback/materials and criterion IDs remain advisory. Unknown
+out-of-scope severities fail closed. Verification restores bounded failure
+diagnostics and effective timeouts in review evidence. Docker cleanup checks
+actual container absence; its base tag is resolved anew for each CI build.
+
+Cycle machinery 0.9.2 reconciles interrupted status, makes completion with
+warnings successful, preserves finished transition Tracks at attempt exhaustion,
+and supports declared terminal error codes. The builder stops out-of-scope
+revision refusals with a visible reason. Native tests cover evidence-only rounds,
+interruption recovery and mid-repair cost exhaustion.
+
+Workbench retains the original binding before child invocation, can revoke
+legacy-digest records, reports exact activation commands and explains why a
+changed provider package requires a new build. Qualification verifies record
+checksums/revocation, removes interrupted reports, distinguishes preflight from
+started checks and checks actual supervisor child-process termination.
+
+Component CI preview refs may pin an earlier API snapshot. Final combined
+compatibility is established by this coordinator's published pins and fresh
+strict verification, rather than by component CI alone.

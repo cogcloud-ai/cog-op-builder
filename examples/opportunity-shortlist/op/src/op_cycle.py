@@ -37,7 +37,7 @@ def save(state, directory):
 
 
 def summary(state, directory, child=None):
-    value = {'ok': state['status'] == 'completed', 'status': state['status'],
+    value = {'ok': state['status'] in ('completed', 'completed-with-problems'), 'status': state['status'],
              'cycle_dir': str(directory), 'cycle': str(Path(directory) / 'cycle.json'),
              'run_dir': state['phases'][-1].get('run_dir') if state['phases'] else None,
              'attempts': len(state['phases']), 'cost_units_reserved': state['cost_units_reserved'],
@@ -155,7 +155,7 @@ def drive(package, directory, state, phases, decision=None):
                 phase['status'] = track['status']
                 state['status'] = 'completed' if track['status'] == 'completed' else track['status']
                 save(state, directory)
-                return (0 if state['status'] == 'completed' else 1), summary(state, directory, {'outputs': track.get('outputs')})
+                return (0 if state['status'] in ('completed', 'completed-with-problems') else 1), summary(state, directory, {'outputs': track.get('outputs')})
             prior_status = state['status']
             state['status'] = 'running'; save(state, directory)
             try:
@@ -170,6 +170,8 @@ def drive(package, directory, state, phases, decision=None):
                 if len(discovered) == 1:
                     phase['run_dir'] = str(discovered[0].parent)
                     phase['status'] = read(discovered[0])['status']
+                    if phase['status'] != 'paused':
+                        state['status'] = phase['status']
                 save(state, directory)
                 raise
             decision = None
@@ -177,7 +179,21 @@ def drive(package, directory, state, phases, decision=None):
             save(state, directory)
             if code == 4:
                 continue
-            state['status'] = child['status']; save(state, directory)
+            state['status'] = child['status']
+            if child['status'] == 'failed':
+                track = read(Path(child['run_dir']) / 'track.json')
+                failed = next((row for row in track['steps'] if row['status'] == 'failed'), None)
+                if failed:
+                    state['reason'] = '; '.join((failed.get('gate') or {}).get('reasons') or ['Step failed: ' + failed['id']])
+                    envelope = read(failed['envelope']) if failed.get('envelope') else {}
+                    error = envelope.get('error') or {}
+                    reported = envelope.get('raw')
+                    if error.get('code') == 'invocation-failed' and isinstance(reported, dict) and not op_runner.envelope_problems(reported) and reported.get('ok') is False:
+                        error = reported.get('error') or error
+                    if error.get('code') in state['configuration'].get('terminal_errors', {}).get(failed['id'], []):
+                        state['status'] = 'refused'
+                        state['reason'] = error.get('detail') or envelope.get('detail') or state['reason']
+            save(state, directory)
             return code, summary(state, directory, child)
     except BudgetExhausted as exc:
         if state['phases']:
@@ -185,13 +201,14 @@ def drive(package, directory, state, phases, decision=None):
             if phase.get('run_dir'):
                 track_path = Path(phase['run_dir']) / 'track.json'
                 track = read(track_path)
-                track['status'] = 'budget-exhausted'
-                for step in track['steps']:
-                    if step['status'] == 'running':
-                        step['status'] = 'budget-exhausted'
-                        step['gate'] = {'status': 'fail', 'reasons': [str(exc)]}
-                op_track.save(track, Path(phase['run_dir']))
-            phase['status'] = 'budget-exhausted'
+                if track['status'] == 'running':
+                    track['status'] = 'budget-exhausted'
+                    for step in track['steps']:
+                        if step['status'] == 'running':
+                            step['status'] = 'budget-exhausted'
+                            step['gate'] = {'status': 'fail', 'reasons': [str(exc)]}
+                    op_track.save(track, Path(phase['run_dir']))
+                    phase['status'] = 'budget-exhausted'
         state['status'], state['reason'] = 'budget-exhausted', str(exc)
         save(state, directory)
         return 1, summary(state, directory)
@@ -213,6 +230,7 @@ def start(package, request_path, cycles_dir=None):
     state = {'schema': SCHEMA, 'status': 'running', 'package': str(package),
              'spec_sha256': spec.sha256(), 'machinery_sha256': machinery_digest(package),
              'configuration': spec.doc['cycle'], 'request': request, 'request_dir': str(Path(request_path).resolve().parent),
+             'input_request': str(Path(request_path).resolve()),
              'request_sha256': op_runner.canonical_sha256(request),
              **limits, 'cost_units_reserved': 0, 'reservations': [], 'phases': []}
     with op_runner.RunLock(directory):
@@ -248,8 +266,8 @@ def resume(package, directory, decision=None):
                     count = len(step.get('attempts') or [])
                     if recorded[(phase['number'], step['id'])] < count:
                         raise op_spec.OpSpecError('Cycle reservation ledger is smaller than the child Track invocation ledger.')
-        if state['status'] in ('completed', 'completed-with-problems', 'rejected', 'budget-exhausted'):
-            return (0 if state['status'] == 'completed' else 1), summary(state, directory)
+        if state['status'] in ('completed', 'completed-with-problems', 'rejected', 'refused', 'budget-exhausted'):
+            return (0 if state['status'] in ('completed', 'completed-with-problems') else 1), summary(state, directory)
         phases = op_spec.cycle_phases(spec.doc); preflight(package, phases)
         return drive(package, directory, state, phases, decision)
 
