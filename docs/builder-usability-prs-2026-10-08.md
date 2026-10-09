@@ -223,3 +223,16 @@ cleanup with child processes. It cannot refund already spent inference or run
 cleanup after SIGKILL/power loss. Tests distinguish a wrong-model preflight
 failure from a failure after the first check. Readiness matrices remain dated
 records rather than qualifications of newer installed CLI versions.
+
+Third review verification: a clean public checkout at `f540140` passed 1405
+reported model-free tests with documented skips, plus tutorial package checks
+and connected native repair/finalization. Nine workspace safeguards and strict
+clean/pin/boundary checks passed; the inventory remains 40 recorded occurrences.
+Smith reports 701 tests, Designer 19, Verifier 9, Builder 22, Workbench 100, and
+each provider 121. Changed Designer/Verifier packages pass Smith checking with
+tests; the builder passes declaration/machinery checks. Custom provider package
+checks pass with the expected warning that Smith machinery validation is skipped.
+Verifier CI at `2a2b635` passed on Linux and macOS; all nine tests ran unskipped
+on Linux, including the single real-container confinement test. The prior
+combined CI result is recorded above at its exact commits; consult GitHub checks
+for newer CI results. No paid inference or PR merges.
