@@ -101,7 +101,9 @@ provider. Suite verification also runs these checks.
 
 Environment setup uses the committed locks on macOS Apple Silicon and Linux
 x86-64. It needs package-download access. Source, fictional fixtures and guides
-are all inside this public repository; no other checkout is required.
+are committed in this public repository. Offline tests also import the manifest-
+listed `cog-workbench` and `cog-typesafe` siblings; no checkout outside the
+public suite is required. Live provider setup is optional.
 
 Local run artifacts, decision inputs, binding activation and environments are
 ignored. Start a new run for a changed input; `resume` continues an existing run.
