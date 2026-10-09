@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "e186fb997a66b13acfaabb8cd19243a9833f7fed"
+      "revision": "e589bbdd23ea1e6e50851afa70dd6627d86ca3dc"
     },
     {
       "name": "cog-op-designer",
@@ -47,29 +47,29 @@
       "name": "op-cog-builder",
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
-      "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "017ea618bae7c7d1465d2849ead524fa110201d8"
+      "description": "Compose design → contract Gate → author → materialize → plan → verify → review → candidate Gate.",
+      "revision": "2cec8529da5069fec8f29877bcd0d9dc696c5940"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "2d427ef9715bab9db689f700f65a17b34de865dc"
+      "revision": "5cb2ceda7a033784a35e574ab30fc50982367153"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
-      "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "acc7c8ed93f9587f41fef8a1bc8362da9c4ec481"
+      "description": "Use a separately installed Codex CLI and the user’s ChatGPT login.",
+      "revision": "1d5bc445ef1ed6c06675907d874514fe400bb913"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
-      "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "b361319309f50d0331d72f2cd1f6d6afa61098f8"
+      "description": "Use a separately installed Claude Code CLI and the user’s Claude login.",
+      "revision": "f4b69f0c970531e5278ce6954618ce8f422ab317"
     },
     {
       "name": "cog-openrouter",
@@ -83,7 +83,7 @@
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "b54c4e48fd2b66ae18f01f3ecd489065c1f69fc7"
+      "revision": "2ad286ce1eff44a2e5db0353118bbb76255bb733"
     },
     {
       "name": "cog-typesafe",
@@ -125,7 +125,7 @@
       "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
       "role": "example",
       "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
-      "revision": "6f2b2365f2d2f68b2ab24fdf0d721ac588e3105d"
+      "revision": "c872e5d4d7d216f02980f520cf0a120ead6b7b53"
     }
   ]
 }
