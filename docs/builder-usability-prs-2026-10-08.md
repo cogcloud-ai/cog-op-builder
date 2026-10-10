@@ -2,8 +2,10 @@
 
 This coordinates the linked learning/usability fixes requested for the demo.
 Each implementation remains in its owning public repository. Pins identify
-published PR commits so the combined changes can be tested before merging;
-these are preview integration pins, not a claim that the PRs have merged.
+published commits so the combined changes can be tested before merging.
+Most component pins now identify their actual main-branch merge commits.
+Verifier #3 and Workbench's main landing PR #6 remain prerequisites; their
+reviewed published sources are pinned until their resulting merges can be pinned.
 
 | Issue | PR | Learner-visible outcome |
 | --- | --- | --- |
@@ -31,6 +33,15 @@ owns the shared qualification source.
 small independent Opportunity Shortlist example, documentation and exercises.
 
 ## Review and merge order
+
+As of the 2026-10-10 merge reconciliation, the remaining prerequisites are
+[Verifier #3](https://github.com/cogcloud-ai/cog-verify-candidate/pull/3) and
+[Workbench #6](https://github.com/cogcloud-ai/cog-workbench/pull/6).
+Workbench #5 merged into `feat/op-composition-setup`, so #6 brings those reviewed
+changes onto `main`. Smith #22 already landed the analogous Smith stack on main.
+Tutorial #4 is on main; suite integration #5 now targets main and includes it.
+Refresh the two remaining pins to their actual merged commits before merging
+suite integration #5. The original dependency order is retained below for context.
 
 1. Workbench #4, then Smith #19 → #20 → #21.
    Land the portable adapter consumers (Author, Evaluator, Brief Router) with
