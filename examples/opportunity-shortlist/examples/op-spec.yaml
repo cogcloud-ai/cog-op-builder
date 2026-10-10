@@ -1,0 +1,142 @@
+schema: openteams/op-manifest [0.1]
+id: openteams/op-learning-shortlist
+version: 0.1.0
+name: Opportunity Shortlist
+description: A fictional learning workflow. Uses explicit synthetic fixtures; a person
+  chooses the final shortlist. No external effects.
+inputs:
+- name: opportunities
+  description: One to ten fictional opportunities.
+  required: true
+  schema:
+    type: array
+    minItems: 1
+    maxItems: 10
+    items:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^OPP-[0-9]{3}$
+        title: &id001
+          type: string
+          minLength: 1
+          pattern: \S
+        description: *id001
+      required:
+      - id
+      - title
+      - description
+- name: company
+  description: Fictional company capabilities.
+  required: true
+  schema:
+    type: object
+    additionalProperties: false
+    properties:
+      name: *id001
+      capabilities:
+        type: array
+        minItems: 1
+        maxItems: 10
+        uniqueItems: true
+        items: *id001
+    required:
+    - name
+    - capabilities
+- name: policy
+  description: Thresholds for pursue and review.
+  required: true
+  schema:
+    type: object
+    additionalProperties: false
+    properties:
+      pursue_at: &id002
+        type: number
+        minimum: 0
+        maximum: 1
+      review_at: *id002
+    required:
+    - pursue_at
+    - review_at
+steps:
+- id: prepare
+  name: Prepare opportunities
+  cog:
+    id: openteams/prepare
+    version: 0.1.0
+    source: ../prepare
+    task: run
+  input:
+    opportunities:
+      $from: inputs.opportunities
+    company:
+      $from: inputs.company
+    policy:
+      $from: inputs.policy
+  expected_outcome: Validated opportunities and preserved profile and policy.
+  gate: &id003
+    policy: envelope-ok-no-error-problems
+    guards: []
+  on_fail: stop
+- id: fit
+  name: Assess each opportunity
+  depends_on:
+  - prepare
+  cog:
+    id: openteams/fit
+    version: 0.1.0
+    source: ../fit
+    task: fixture
+  foreach:
+    items:
+      $from: steps.prepare.payload.opportunities
+    as: opportunity
+  input:
+    opportunity:
+      $from: opportunity
+    company:
+      $from: steps.prepare.payload.company
+    policy:
+      $from: steps.prepare.payload.policy
+  expected_outcome: One inspectable recommendation per opportunity, using explicitly
+    synthetic answers.
+  gate: *id003
+  on_fail: stop
+- id: shortlist
+  name: Choose the opportunities to investigate
+  depends_on:
+  - prepare
+  - fit
+  cog:
+    id: openteams/shortlist
+    version: 0.1.0
+    source: ../shortlist
+    task: run
+  input:
+    opportunities:
+      $from: steps.prepare.payload.opportunities
+    assessments:
+      $from: steps.fit.payload
+  expected_outcome: Ranked recommendations, then an explicit human choice.
+  gate:
+    policy: human
+    guards: []
+  on_fail: stop
+outputs:
+  ranked:
+    $from: steps.shortlist.payload.ranked
+  approved:
+    $from: steps.shortlist.decision.approved
+  rejected:
+    $from: steps.shortlist.decision.rejected
+track:
+  records:
+  - input_request
+  - step_requests
+  - cog_envelopes
+  - contract_check_problems
+  - gate_decisions
+  - model_bindings
+  - output_artifacts

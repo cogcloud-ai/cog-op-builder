@@ -1,0 +1,163 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "ranked": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "opportunity_id": {
+            "type": "string",
+            "pattern": "^OPP-[0-9]{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "recommendation": {
+            "enum": [
+              "pursue",
+              "review",
+              "pass"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reasons": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        },
+        "required": [
+          "opportunity_id",
+          "title",
+          "recommendation",
+          "score",
+          "reasons"
+        ]
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "change_id": {
+            "type": "string",
+            "pattern": "^OPP-[0-9]{3}$"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "opportunity": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^OPP-[0-9]{3}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description"
+            ]
+          },
+          "assessment": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "opportunity_id": {
+                "type": "string",
+                "pattern": "^OPP-[0-9]{3}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "recommendation": {
+                "enum": [
+                  "pursue",
+                  "review",
+                  "pass"
+                ]
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "reasons": {
+                "type": "array",
+                "minItems": 3,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                }
+              }
+            },
+            "required": [
+              "opportunity_id",
+              "title",
+              "recommendation",
+              "score",
+              "reasons"
+            ]
+          },
+          "target_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "change_id",
+          "summary",
+          "opportunity",
+          "assessment",
+          "target_sha256",
+          "content_sha256"
+        ]
+      }
+    },
+    "authority_use": {
+      "type": "array",
+      "maxItems": 0
+    }
+  },
+  "required": [
+    "ranked",
+    "changes",
+    "authority_use"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "model": "synthetic-teaching-fixture-not-a-model",
+  "answer_source": "llm-adapter",
+  "answers": {
+    "scope_match": {
+      "type": "noul",
+      "noul": 0.92
+    },
+    "delivery_capacity": {
+      "type": "noul",
+      "noul": 0.88
+    }
+  },
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null
+  }
+}

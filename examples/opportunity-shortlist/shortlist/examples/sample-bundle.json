@@ -1,0 +1,102 @@
+{
+  "opportunities": [
+    {
+      "id": "OPP-001",
+      "title": "Community data dashboard",
+      "description": "Build a Python dashboard for a community organization and train its staff. No specialist certification required."
+    },
+    {
+      "id": "OPP-002",
+      "title": "Data portal with specialist security audit",
+      "description": "Build a data portal and perform a certified security audit. The team has no certified security auditor."
+    },
+    {
+      "id": "OPP-003",
+      "title": "Replace a pedestrian bridge",
+      "description": "Design and construct a pedestrian bridge. Requires a licensed structural engineer and a construction crew."
+    }
+  ],
+  "assessments": [
+    {
+      "decision": {
+        "opportunity_id": "OPP-001",
+        "title": "Community data dashboard",
+        "recommendation": "pursue",
+        "score": 0.88,
+        "reasons": [
+          "Scope match: 0.92.",
+          "Delivery capacity: 0.88.",
+          "The lower value is 0.88; pursue at 0.75, review at 0.40."
+        ]
+      },
+      "answers": {
+        "scope_match": {
+          "type": "noul",
+          "noul": 0.92
+        },
+        "delivery_capacity": {
+          "type": "noul",
+          "noul": 0.88
+        }
+      },
+      "answered_by": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter"
+      }
+    },
+    {
+      "decision": {
+        "opportunity_id": "OPP-002",
+        "title": "Data portal with specialist security audit",
+        "recommendation": "review",
+        "score": 0.55,
+        "reasons": [
+          "Scope match: 0.85.",
+          "Delivery capacity: 0.55.",
+          "The lower value is 0.55; pursue at 0.75, review at 0.40."
+        ]
+      },
+      "answers": {
+        "scope_match": {
+          "type": "noul",
+          "noul": 0.85
+        },
+        "delivery_capacity": {
+          "type": "noul",
+          "noul": 0.55
+        }
+      },
+      "answered_by": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter"
+      }
+    },
+    {
+      "decision": {
+        "opportunity_id": "OPP-003",
+        "title": "Replace a pedestrian bridge",
+        "recommendation": "pass",
+        "score": 0.05,
+        "reasons": [
+          "Scope match: 0.08.",
+          "Delivery capacity: 0.05.",
+          "The lower value is 0.05; pursue at 0.75, review at 0.40."
+        ]
+      },
+      "answers": {
+        "scope_match": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "delivery_capacity": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "answered_by": {
+        "model": "synthetic-teaching-fixture-not-a-model",
+        "answer_source": "llm-adapter"
+      }
+    }
+  ]
+}

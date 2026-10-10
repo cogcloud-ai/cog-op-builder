@@ -26,6 +26,14 @@ def main():
         result = subprocess.run(['pixi', 'run', 'test'], cwd=args.workspace / name)
         if result.returncode:
             failed.append(name)
+    if not args.package:
+        tutorial = args.workspace.resolve() / SUITE.name / 'examples/opportunity-shortlist'
+        print('\nTesting Opportunity Shortlist learning example', flush=True)
+        for task in ('setup', 'check', 'test'):
+            result = subprocess.run(['pixi', 'run', task], cwd=tutorial)
+            if result.returncode:
+                failed.append(f'opportunity-shortlist ({task})')
+                break
     if failed:
         raise SystemExit('Failed: ' + ', '.join(failed))
     print('All requested model-free tests passed.')

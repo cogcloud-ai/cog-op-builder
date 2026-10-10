@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Opportunity fit output",
+  "description": "The payload under envelope v1's `payload` key. `$defs.decision` is authored with task_logic.decide; `$defs.answers` is derived from context/questions.json by `pixi run derive-schema` and checked for drift.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "answers",
+    "answered_by"
+  ],
+  "properties": {
+    "decision": {
+      "$ref": "#/$defs/decision"
+    },
+    "answers": {
+      "$ref": "#/$defs/answers"
+    },
+    "answered_by": {
+      "$ref": "#/$defs/answered_by"
+    }
+  },
+  "$defs": {
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opportunity_id": {
+          "type": "string",
+          "pattern": "^OPP-[0-9]{3}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "recommendation": {
+          "enum": [
+            "pursue",
+            "review",
+            "pass"
+          ]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reasons": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "required": [
+        "opportunity_id",
+        "title",
+        "recommendation",
+        "score",
+        "reasons"
+      ]
+    },
+    "answered_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "answer_source"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "answer_source": {
+          "enum": [
+            "system-one-model",
+            "llm-adapter"
+          ]
+        }
+      }
+    },
+    "answers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_match",
+        "delivery_capacity"
+      ],
+      "properties": {
+        "scope_match": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "noul"
+          ],
+          "properties": {
+            "type": {
+              "const": "noul"
+            },
+            "noul": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "delivery_capacity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "noul"
+          ],
+          "properties": {
+            "type": {
+              "const": "noul"
+            },
+            "noul": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

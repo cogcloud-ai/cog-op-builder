@@ -1,0 +1,70 @@
+schema: openteams/cog-manifest [0.1]
+id: openteams/fit
+version: 0.1.0
+summary: Assess one fictional opportunity using typed answers and explicit policy.
+license: Apache-2.0
+kind: context
+owner: trent@openteams.com
+frames: []
+context:
+  input_schema: context/input-schema.json
+  output_schema: context/output-schema.json
+  output_example: context/output-example.json
+requires:
+- capability: system-one/decisions
+  locality: any
+interfaces:
+- name: fixture-decision
+  kind: command
+  task: fixture
+  audience: usage
+  default: true
+- name: decide
+  kind: command
+  task: ask-composed
+  audience: usage
+  default: false
+- name: composition
+  kind: command
+  task: composition
+  audience: lifecycle
+- name: prepare
+  kind: command
+  task: prepare
+  audience: lifecycle
+- name: replay
+  kind: command
+  task: replay
+  audience: lifecycle
+- name: health
+  kind: command
+  task: check
+  audience: lifecycle
+io:
+  accepts:
+  - task_request
+  produces:
+  - opportunity_fit
+memory: none
+prohibits:
+- send_external_message
+- modify_source_data
+extensions:
+  system_one:
+    contract: openteams/system-one-decision [0.1-draft]
+    questions: context/questions.json
+  workbench_composition:
+    contract: openteams/context-composition [0.1-draft]
+    capability: system-one/decisions
+    bridge_interface: composition
+    accepted_compositions:
+    - model+harness
+    - harness
+    required_features:
+    - noul
+    allowed_localities:
+    - local
+    - cloud
+    tools: none
+    checks: packaged-before-and-after
+    evidence_scope: composed-system

@@ -1,0 +1,21 @@
+[workspace]
+name = "opportunity-shortlist-learning"
+version = "0.1.0"
+description = "Learn one Cog, then an Op, with three fictional opportunities."
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+python = ">=3.11"
+pyyaml = "*"
+jsonschema = "*"
+
+[tasks]
+setup = "python demo.py setup"
+single = "python demo.py single"
+start = "python demo.py start"
+status = "python demo.py status"
+decide = "python demo.py decide"
+resume = "python demo.py resume"
+test = "python -m unittest discover -s tests -v"
+check = "python demo.py check"

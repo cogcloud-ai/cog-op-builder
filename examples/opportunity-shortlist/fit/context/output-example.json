@@ -1,0 +1,27 @@
+{
+  "decision": {
+    "opportunity_id": "OPP-001",
+    "title": "Community data dashboard",
+    "recommendation": "pursue",
+    "score": 0.88,
+    "reasons": [
+      "Scope match: 0.92.",
+      "Delivery capacity: 0.88.",
+      "The lower value is 0.88; pursue at 0.75, review at 0.40."
+    ]
+  },
+  "answers": {
+    "scope_match": {
+      "type": "noul",
+      "noul": 0.92
+    },
+    "delivery_capacity": {
+      "type": "noul",
+      "noul": 0.88
+    }
+  },
+  "answered_by": {
+    "model": "synthetic-teaching-fixture-not-a-model",
+    "answer_source": "llm-adapter"
+  }
+}
