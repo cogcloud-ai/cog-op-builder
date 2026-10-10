@@ -4,8 +4,8 @@ This coordinates the linked learning/usability fixes requested for the demo.
 Each implementation remains in its owning public repository. Pins identify
 published commits so the combined changes can be tested before merging.
 Most component pins now identify their actual main-branch merge commits.
-Verifier #3 and Workbench's main landing PR #6 remain prerequisites; their
-reviewed published sources are pinned until their resulting merges can be pinned.
+Workbench's main landing PR #6 remains a prerequisite; its reviewed published
+source is pinned until its resulting merge can be pinned.
 
 | Issue | PR | Learner-visible outcome |
 | --- | --- | --- |
@@ -34,13 +34,13 @@ small independent Opportunity Shortlist example, documentation and exercises.
 
 ## Review and merge order
 
-As of the 2026-10-10 merge reconciliation, the remaining prerequisites are
-[Verifier #3](https://github.com/cogcloud-ai/cog-verify-candidate/pull/3) and
+At this merge reconciliation, the remaining prerequisite is
 [Workbench #6](https://github.com/cogcloud-ai/cog-workbench/pull/6).
+Verifier #3 has now merged and its actual merge commit is pinned.
 Workbench #5 merged into `feat/op-composition-setup`, so #6 brings those reviewed
 changes onto `main`. Smith #22 already landed the analogous Smith stack on main.
 Tutorial #4 is on main; suite integration #5 now targets main and includes it.
-Refresh the two remaining pins to their actual merged commits before merging
+Refresh the remaining Workbench pin to its actual merged commit before merging
 suite integration #5. The original dependency order is retained below for context.
 
 1. Workbench #4, then Smith #19 → #20 → #21.
@@ -252,3 +252,15 @@ The Workbench pin and the saved-build guide link were then moved to `cea6606`,
 which compares the saved input identity after resolving filesystem aliases.
 That change is limited to one condition and its two tests; the counts above
 describe the earlier commits named there.
+
+## Merge reconciliation verification
+
+A clean public checkout at `8a672b3` passed full strict verification, including
+the 102-test Workbench suite, connected native repair/finalization and the
+13-test Opportunity Shortlist tutorial. Nine workspace safeguard tests also
+passed. The static boundary inventory remains 40 recorded occurrences with no
+new exceptions. Verifier #3 then merged at `22d1367`; its tree is identical to
+the verified `2a2b635` source, and the manifest now pins that actual merge.
+Workbench #6 preserves the exact reviewed #5 source, includes main as an
+ancestor, and has passed Linux/macOS CI. Its merge remains required before
+final integration; no merges were performed during this reconciliation.

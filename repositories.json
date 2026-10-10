@@ -41,7 +41,7 @@
       "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
       "role": "core",
       "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
-      "revision": "2a2b635fc4d424c05ae5bfba0bed4d2690b11467"
+      "revision": "22d1367177b45aefdce67f2cbdb58fd670394356"
     },
     {
       "name": "op-cog-builder",
