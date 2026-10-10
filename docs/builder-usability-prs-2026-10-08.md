@@ -56,7 +56,7 @@ run one fictional decision Cog, then the offline Op with three opportunities,
 inspect the human Gate, save a decision and resume. Its `fixture` task uses synthetic answers tied to the complete question task, so learners do not mistake
 replay for live inference. Use its six exercises and facilitator notes first.
 
-Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/e03de1e7ffd58fb05f4021886a187c4db9c23619/docs/tool-suite.md)
+Next use [Build a Cog with saved progress](https://github.com/cogcloud-ai/cog-workbench/blob/cea6606833679a180a75dc42543c882644f72608/docs/tool-suite.md)
 in Studio for a small pure-code brief. Accept the contract, inspect candidate
 source/test observations/review, and separately accept or reject the final package.
 Explain round/model-turn budgets before starting; these are invocation caps, not
@@ -236,3 +236,8 @@ Verifier CI at `2a2b635` passed on Linux and macOS; all nine tests ran unskipped
 on Linux, including the single real-container confinement test. The prior
 combined CI result is recorded above at its exact commits; consult GitHub checks
 for newer CI results. No paid inference or PR merges.
+
+The Workbench pin and the saved-build guide link were then moved to `cea6606`,
+which compares the saved input identity after resolving filesystem aliases.
+That change is limited to one condition and its two tests; the counts above
+describe the earlier commits named there.
