@@ -55,7 +55,7 @@
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "93caf9ee88f9f2f37f68131936562813ee3a0aa0"
+      "revision": "fc9bb85feb8c749d57b4f6722ec8725cf0e5a7e7"
     },
     {
       "name": "cog-chatgpt",

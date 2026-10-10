@@ -3,9 +3,8 @@
 This coordinates the linked learning/usability fixes requested for the demo.
 Each implementation remains in its owning public repository. Pins identify
 published commits so the combined changes can be tested before merging.
-Most component pins now identify their actual main-branch merge commits.
-Workbench's main landing PR #6 remains a prerequisite; its reviewed published
-source is pinned until its resulting merge can be pinned.
+All selected component changes are now merged onto their repositories' main
+branches, and the component pins identify their actual main-branch merge commits.
 
 | Issue | PR | Learner-visible outcome |
 | --- | --- | --- |
@@ -34,14 +33,14 @@ small independent Opportunity Shortlist example, documentation and exercises.
 
 ## Review and merge order
 
-At this merge reconciliation, the remaining prerequisite is
+All component prerequisites have merged, including Verifier #3 and
 [Workbench #6](https://github.com/cogcloud-ai/cog-workbench/pull/6).
-Verifier #3 has now merged and its actual merge commit is pinned.
-Workbench #5 merged into `feat/op-composition-setup`, so #6 brings those reviewed
-changes onto `main`. Smith #22 already landed the analogous Smith stack on main.
+Workbench #5 merged into `feat/op-composition-setup`; #6 landed those reviewed
+changes onto `main`. Smith #22 landed the analogous Smith stack on main.
 Tutorial #4 is on main; suite integration #5 now targets main and includes it.
-Refresh the remaining Workbench pin to its actual merged commit before merging
-suite integration #5. The original dependency order is retained below for context.
+The Workbench pin now identifies its actual merge commit, `fc9bb85`, whose tree
+matches the verified landing branch exactly. Suite integration #5 is the final
+merge in this set. The original dependency order is retained below for context.
 
 1. Workbench #4, then Smith #19 → #20 → #21.
    Land the portable adapter consumers (Author, Evaluator, Brief Router) with
@@ -262,5 +261,6 @@ passed. The static boundary inventory remains 40 recorded occurrences with no
 new exceptions. Verifier #3 then merged at `22d1367`; its tree is identical to
 the verified `2a2b635` source, and the manifest now pins that actual merge.
 Workbench #6 preserves the exact reviewed #5 source, includes main as an
-ancestor, and has passed Linux/macOS CI. Its merge remains required before
-final integration; no merges were performed during this reconciliation.
+ancestor, and passed Linux/macOS CI. It has now merged at `fc9bb85`; the pinned
+merge tree is byte-identical to the verified source. No merges were performed
+by the coding agent during this reconciliation.
