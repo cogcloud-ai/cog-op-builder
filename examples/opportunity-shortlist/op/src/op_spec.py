@@ -14,6 +14,7 @@ adds it, so an author never discovers a missing construct mid-run.
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 import os
 import re
@@ -58,7 +59,7 @@ LOOP_VAR_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 ON_FAIL = ("stop", "skip", "retry-once")
 
 TOP_KEYS = {"schema", "id", "version", "name", "description", "inputs",
-            "steps", "outputs", "track", "authority"}
+            "steps", "outputs", "track", "authority", "cycle"}
 STEP_KEYS = {"id", "name", "depends_on", "cog", "foreach", "input",
              "expected_outcome", "gate", "on_fail", "authority", "repeat"}
 COG_KEYS = {"id", "version", "source", "task"}
@@ -84,7 +85,12 @@ TRACK_KEYS = {"records"}
 #: never grants itself anything.
 AUTHORITY_TOP_KEYS = {"ttl_minutes"}
 STEP_AUTHORITY_KEYS = {"requires"}
-REQUIREMENT_KEYS = {"resource", "action", "repositories", "changes"}
+#: What an operation may touch is named `targets`: a repository, a site, a
+#: document store, an API — the runner treats each as an opaque string.
+#: `repositories` is the name existing documents use for the same list and is
+#: read as an alias; a document that states both is refused (0.8.0).
+TARGET_KEYS = ("targets", "repositories")
+REQUIREMENT_KEYS = {"resource", "action", "changes", *TARGET_KEYS}
 DEFAULT_TTL_MINUTES = 60
 
 # Refused by name, with the phase that adds the construct. A value of None
@@ -680,6 +686,16 @@ def ttl_minutes(doc):
 APPROVED_PATH = "steps.{step}.decision.approved"
 
 
+def target_key(operation):
+    """The key OPERATION names its targets under — `targets`, or
+    `repositories` in an existing document — or None when it names neither.
+    Stating both is refused wherever a document is validated."""
+    for key in TARGET_KEYS:
+        if key in (operation or {}):
+            return key
+    return None
+
+
 def decision_step(requirement):
     """The step whose human decision a write requirement's `changes` reads,
     or None when the expression is not `{$from: steps.<id>.decision.approved}`.
@@ -746,6 +762,14 @@ def _authority_problems(step, sid, step_ids, human_steps, problems,
                 problems.append(f"{where} declares {field} "
                                 f"{requirement.get(field)!r}; a requirement's "
                                 f"{field} is a string.")
+        # Whatever the action: a write's lists are not what the grant is
+        # issued from, so a conflict there would otherwise pass unread.
+        both = all(key in requirement for key in TARGET_KEYS)
+        if both:
+            problems.append(f"{where} declares both targets and "
+                            f"repositories; repositories is the earlier "
+                            f"name for targets, and a requirement states "
+                            f"one of them.")
         if requirement.get("action") == "write":
             target = decision_step(requirement)
             if target is None:
@@ -785,8 +809,8 @@ def _authority_problems(step, sid, step_ids, human_steps, problems,
             problems.append(f"{where} declares changes on a "
                             f"{requirement.get('action')!r} requirement; "
                             f"changes belong to a write.")
-        elif requirement.get("repositories") is None:
-            problems.append(f"{where} declares no repositories; a read "
+        elif not both and requirement.get(target_key(requirement)) is None:
+            problems.append(f"{where} declares no targets; a read "
                             f"requirement names what it reads.")
 
 
@@ -1093,7 +1117,7 @@ def validate(doc):
         for index, requirement in enumerate(requirements(step)):
             if not isinstance(requirement, dict):
                 continue
-            for field in ("repositories", "changes"):
+            for field in (*TARGET_KEYS, "changes"):
                 if field in requirement:
                     _expr_problems(
                         requirement[field],
@@ -1109,9 +1133,75 @@ def validate(doc):
         _expr_problems(outputs, "the Op spec's outputs", input_names, step_ids,
                        step_ids, set(), problems, human_steps)
 
+    if not problems and 'cycle' in doc:
+        try:
+            cycle_phases(doc)
+        except (OpSpecError, KeyError, TypeError, ValueError) as exc:
+            problems.extend(exc.problems if isinstance(exc, OpSpecError) else [str(exc)])
     if problems:
         raise OpSpecError(problems)
     return ordered
+
+
+def cycle_phases(doc):
+    """Validate declarative bounded transitions and every expanded phase spec."""
+    cycle = doc.get('cycle')
+    required = {'outcome_step', 'outcome_field', 'max_attempts', 'max_cost_units', 'costs', 'transitions'}
+    if not isinstance(cycle, dict) or not required <= set(cycle) or set(cycle) - required - {'terminal_errors'}:
+        raise OpSpecError('cycle must declare required fields (and optional terminal_errors): ' + ', '.join(sorted(required)))
+    base = copy.deepcopy(doc); base.pop('cycle')
+    ordered = validate(base)
+    base['steps'] = ordered
+    ids = [step['id'] for step in ordered]
+    if cycle['outcome_step'] not in ids or not isinstance(cycle['outcome_field'], str) or not cycle['outcome_field']:
+        raise OpSpecError('cycle must name a declared outcome step and payload field.')
+    if any(requirements(step) for step in ordered) or base.get('authority'):
+        raise OpSpecError('The bounded cycle profile supports pure steps without authority only.')
+    if any(value['name'] == 'cycle_previous' for value in base.get('inputs', [])):
+        raise OpSpecError('cycle_previous is reserved for durable phase input.')
+    transitions = cycle['transitions']
+    if not isinstance(transitions, dict) or not transitions:
+        raise OpSpecError('cycle needs explicit outcome transitions.')
+    phases = {'initial': base}
+    all_ids = set(ids)
+    for outcome, transition in transitions.items():
+        if not isinstance(outcome, str) or not outcome or outcome == 'initial' or not isinstance(transition, dict) or set(transition) - {'restart', 'prepare', 'replace'} or 'restart' not in transition:
+            raise OpSpecError('Each cycle outcome needs restart and optional prepare/replace declarations.')
+        if transition['restart'] not in ids:
+            raise OpSpecError('cycle restart must name a declared step.')
+        if ids.index(transition['restart']) > ids.index(cycle['outcome_step']):
+            raise OpSpecError('cycle restart must precede its outcome step.')
+        phase = copy.deepcopy(base)
+        prefix = ids[:ids.index(transition['restart'])]
+        preparation = transition.get('prepare', [])
+        replacements = transition.get('replace', {})
+        if not isinstance(preparation, list) or not isinstance(replacements, dict) or not set(replacements) <= set(ids) - set(prefix):
+            raise OpSpecError('cycle preparation is a step list; replacements may change only restarted steps.')
+        phase['inputs'] = list(phase.get('inputs') or []) + [{'name': 'cycle_previous', 'required': True, 'schema': {'type': 'object'}}]
+        for step in phase['steps']:
+            if step['id'] in replacements:
+                replacement = replacements[step['id']]
+                if not isinstance(replacement, dict) or set(replacement) - {'input', 'depends_on'}:
+                    raise OpSpecError('cycle replacements change input mappings/dependencies only.')
+                step.update(copy.deepcopy(replacement))
+        phase['steps'] = phase['steps'][:len(prefix)] + copy.deepcopy(preparation) + phase['steps'][len(prefix):]
+        validate(phase)
+        if any(requirements(step) for step in phase['steps']):
+            raise OpSpecError('cycle preparation cannot require authority.')
+        all_ids.update(step['id'] for step in phase['steps'])
+        phases[outcome] = phase
+    costs = cycle['costs']
+    if not isinstance(costs, dict) or set(costs) != all_ids or any(type(value) is not int or value < 0 for value in costs.values()):
+        raise OpSpecError('cycle costs must declare nonnegative integer reservation units for every phase step.')
+    terminal_errors = cycle.get('terminal_errors', {})
+    if not isinstance(terminal_errors, dict) or not set(terminal_errors) <= all_ids or any(not isinstance(codes, list) or not codes or any(not isinstance(code, str) or not code for code in codes) or len(set(codes)) != len(codes) for codes in terminal_errors.values()):
+        raise OpSpecError('cycle terminal_errors maps declared steps to distinct nonempty envelope error codes.')
+    for key in ('max_attempts', 'max_cost_units'):
+        problems = []
+        _expr_problems(cycle[key], 'cycle.' + key, {value['name'] for value in base.get('inputs', [])}, set(), set(), set(), problems, set())
+        if problems:
+            raise OpSpecError(problems)
+    return phases
 
 
 class OpSpec:

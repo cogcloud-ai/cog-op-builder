@@ -30,7 +30,7 @@ import task_logic                       # noqa: E402  (the ONLY per-cog module)
 from jsonschema import Draft202012Validator  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-MACHINERY = "decision-cog 0.1.1"
+MACHINERY = "decision-cog 0.1.4"
 EXTENSION = "system_one"
 EXTENSION_CONTRACT = "openteams/system-one-decision [0.1-draft]"
 
@@ -176,8 +176,9 @@ def prepare(bundle):
     """Input bundle -> the System One turn a host sends to its admitted
     provider. No provider is named here; the host's binding decides."""
     problems = validate_input(bundle)
-    if problems:
-        raise ValueError("Input failed packaged checks: " + json.dumps(problems[:5]))
+    refusing = [p for p in problems if p.get("severity") not in ("warning", "warn")]
+    if refusing:
+        raise ValueError("Input failed packaged checks: " + json.dumps(refusing[:5]))
     task = {"state": task_logic.state(bundle), "questions": questions_for(bundle)}
     contract.check_task(task)
     return {"consumer": dict(SELF_ID), "context": [], "task": task}
@@ -187,17 +188,21 @@ def finish(bundle, result, provenance=None):
     """Turn result -> envelope v1. Malformed answers fail the call; decision
     and output checks are reported as problems for a Gate to weigh."""
     problems = validate_input(bundle)
-    if problems:
-        raise ValueError("Input failed packaged checks: " + json.dumps(problems[:5]))
+    refusing = [p for p in problems if p.get("severity") not in ("warning", "warn")]
+    if refusing:
+        raise ValueError("Input failed packaged checks: " + json.dumps(refusing[:5]))
     asked = questions_for(bundle)
     contract_problems = contract.result_problems(result, asked) if isinstance(result, dict) else ["result is not an object"]
     if contract_problems:
         return envelope("decide", False, error={"code": "answers-invalid", "detail": contract_problems[0]},
-                        problems=[problem("answers", p) for p in contract_problems], binding=provenance)
-    answers = result["answers"]
+                        problems=problems + [problem("answers", p) for p in contract_problems], binding=provenance)
+    saved_result = copy.deepcopy(result)
+    answers = copy.deepcopy(result["answers"])
     payload = {"decision": task_logic.decide(bundle, answers),
                "answers": answers,
                "answered_by": {"model": result["model"], "answer_source": result["answer_source"]}}
-    problems = _schema_problems(payload, OUTPUT_SCHEMA, "schema")
+    problems += _schema_problems(payload, OUTPUT_SCHEMA, "schema")
     problems += task_logic.check_output(payload, bundle)
-    return envelope("decide", True, payload=payload, problems=problems, binding=provenance)
+    output = envelope("decide", True, payload=payload, problems=problems, binding=provenance)
+    output["provider_result"] = saved_result
+    return output

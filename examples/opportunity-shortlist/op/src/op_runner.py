@@ -481,7 +481,7 @@ AUTHORITY_SCHEMA = "openteams/op-authority [0.1]"
 GRANT_SCHEMA = "openteams/op-grant [0.1]"
 PENDING_SCHEMA = "openteams/op-pending-decision [0.1]"
 DECISION_SCHEMA = "openteams/op-decision [0.1]"
-VERDICTS = ("approve", "reject", "edit")
+VERDICTS = ("approve", "reject", "edit", "defer")
 #: The verdicts of a decision about an ARTIFACT (machinery 0.7.0): one
 #: thing, taken whole or refused whole. There is no edit — an edited
 #: artifact is a different artifact, with different digests, and is decided
@@ -655,8 +655,8 @@ def canonical_sha256(value):
 COG_MANIFESTS = ("pixi.toml", "cog.yaml")
 
 #: The directories whose every file is part of a Cog's package digest: its
-#: context (prompts, schemas, fixtures the Cog reads) and its source.
-COG_DIGEST_DIRS = ("context", "src")
+#: context, source, declared usage scripts, binding code and contracts.
+COG_DIGEST_DIRS = ("context", "src", "scripts", "binding", "contracts")
 
 #: What of an installed binding belongs to a RESULT's identity. `model.json`
 #: is gitignored installation state and carries the endpoint and the name of
@@ -704,7 +704,8 @@ def cog_package_sha256(cog_dir):
 
     A result belongs to a Cog as well as to a request: two answers are
     evidence of the same thing only when the same Cog produced them. The
-    digest covers the Cog's manifest, every file under `context/` and `src/`
+    digest covers the Cog's manifest and every file under `context/`, `src/`,
+    `scripts/`, `binding/` and `contracts/`
     by sorted relative path, and — when an installation left a `model.json` —
     ONLY the `model` and `response_format` it names.
 
@@ -738,7 +739,18 @@ def cog_package_sha256(cog_dir):
         if not isinstance(installed, dict):
             installed = {}
         binding = {key: installed.get(key) for key in BINDING_DIGEST_KEYS}
-    return canonical_sha256({"files": files, "binding": binding})
+    composition = None
+    composition_path = cog_dir / '.op-composition.json'
+    if composition_path.is_file():
+        try:
+            installed = json.loads(composition_path.read_text())
+            selected = installed['composition']
+            composition = {key: selected.get(key) for key in
+                           ('consumer', 'context_sha256', 'binding', 'model_binding', 'evidence_scope', 'checks')}
+            composition['host_sha256'] = installed.get('host_sha256')
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            composition = {'invalid_sha256': sha256_file(composition_path)}
+    return canonical_sha256({"files": files, "binding": binding, "composition": composition})
 
 
 #: A change carries TWO hashes, and they answer different questions.
@@ -794,15 +806,16 @@ def _document(path, schema, what):
 def load_authority(path):
     """The run's ADMISSION: the owner's authority for the whole run, in the
     same operation shape as a grant. `write` operations carry the
-    repositories writes may EVER touch — never change ids, which only a
-    human decision can name."""
+    targets writes may EVER touch — never change ids, which only a
+    human decision can name. `repositories` is read as the earlier name for
+    `targets`; an operation that states both is refused."""
     doc = _document(path, AUTHORITY_SCHEMA, "run admission")
     operations = doc.get("operations")
     problems = []
     if not isinstance(operations, list) or not operations:
         raise op_spec.OpSpecError(
             f"{Path(path).name} admits no operations; a run admission is a "
-            f"list of {{resource, action, repositories}} operations.")
+            f"list of {{resource, action, targets}} operations.")
     for index, operation in enumerate(operations):
         where = f"the admission's operations[{index}]"
         if not isinstance(operation, dict):
@@ -812,28 +825,33 @@ def load_authority(path):
             if not isinstance(operation.get(field), str) or not operation[field]:
                 problems.append(f"{where} declares {field} "
                                 f"{operation.get(field)!r}; it is a string.")
-        repositories = operation.get("repositories")
-        if not isinstance(repositories, list) or any(
-                not isinstance(r, str) for r in repositories):
-            problems.append(f"{where} declares repositories "
-                            f"{repositories!r}; an admitted operation names "
-                            f"the repositories it may touch.")
+        if all(key in operation for key in op_spec.TARGET_KEYS):
+            problems.append(f"{where} declares both targets and "
+                            f"repositories; repositories is the earlier "
+                            f"name for targets, and an operation states one "
+                            f"of them.")
+        targets = operation.get(op_spec.target_key(operation))
+        if not isinstance(targets, list) or any(
+                not isinstance(t, str) for t in targets):
+            problems.append(f"{where} declares targets "
+                            f"{targets!r}; an admitted operation names "
+                            f"the targets it may touch.")
         if "changes" in operation:
             problems.append(f"{where} names changes; an admission admits "
-                            f"repositories, and only a human decision names "
+                            f"targets, and only a human decision names "
                             f"change ids.")
     if problems:
         raise op_spec.OpSpecError(problems)
     return doc
 
 
-def admitted_repositories(authority, resource, action):
-    """The repositories the run was admitted to touch for one operation."""
+def admitted_targets(authority, resource, action):
+    """The targets the run was admitted to touch for one operation."""
     out = set()
     for operation in (authority or {}).get("operations") or []:
         if (operation.get("resource") == resource
                 and operation.get("action") == action):
-            out |= {r for r in operation.get("repositories") or []}
+            out |= set(operation.get(op_spec.target_key(operation)) or [])
     return out
 
 
@@ -975,7 +993,7 @@ def issue_grant(step, context, authority, spec, run_id, run_dir, decisions,
                         != approved[cid].get("content_sha256"):
                     raise Denied(f"change {cid!r} was approved against other "
                                  f"content than the one requested")
-            admitted = admitted_repositories(authority, resource, "write")
+            admitted = admitted_targets(authority, resource, "write")
             for cid, change in approved.items():
                 repository = change.get("repository")
                 if not isinstance(repository, str) or repository not in admitted:
@@ -1006,21 +1024,24 @@ def issue_grant(step, context, authority, spec, run_id, run_dir, decisions,
                           "decision": str(Path(path).resolve()),
                           "decision_sha256": record.get("decision_sha256")}
         else:
-            requested = op_spec.evaluate(requirement.get("repositories"),
-                                         context) or []
+            # The grant names its targets under the key the requirement
+            # used, so an existing spec keeps issuing the grant an existing
+            # Cog reads (0.8.0).
+            key = op_spec.target_key(requirement)
+            requested = op_spec.evaluate(requirement.get(key), context) or []
             if not isinstance(requested, list) or any(
                     not isinstance(r, str) for r in requested):
                 raise Denied(f"step {sid!r} requires {resource} {action} of "
                              f"{requested!r}, which is not a list of "
-                             f"repositories")
-            admitted = admitted_repositories(authority, resource, action)
+                             f"targets")
+            admitted = admitted_targets(authority, resource, action)
             outside = [r for r in requested if r not in admitted]
             if outside:
                 raise Denied(f"step {sid!r} requires {resource} {action} of "
                              f"{outside}, which this run's admission does not "
                              f"cover")
             operations.append({"resource": resource, "action": action,
-                               "repositories": list(requested)})
+                               key: list(requested)})
     index = _next_grant_index(run_dir, sid)
     grant = grant_document(step, run_id, operations, provenance,
                            spec.ttl_minutes,
@@ -1040,7 +1061,7 @@ def grant_record(grant, path):
         "path": str(Path(path).resolve()),
         "operations": [{"resource": o.get("resource"),
                         "action": o.get("action"),
-                        "count": len(o.get("repositories")
+                        "count": len(o.get(op_spec.target_key(o))
                                      or o.get("changes") or [])}
                        for o in grant["operations"]],
         "issued_by": grant["issued_by"],
@@ -1498,7 +1519,7 @@ def apply_decision(pending, decision):
     if not isinstance(decisions, list):
         raise op_spec.OpSpecError("the decision document declares no "
                                   "decisions list.")
-    seen, approved, rejected, edited, history = set(), [], [], [], []
+    seen, approved, rejected, edited, deferred, history = set(), [], [], [], [], []
     for index, entry in enumerate(decisions):
         where = f"decisions[{index}]"
         if not isinstance(entry, dict):
@@ -1528,6 +1549,9 @@ def apply_decision(pending, decision):
         elif verdict == "reject":
             change = dict(proposed[cid])
             rejected.append(cid)
+        elif verdict == "defer":
+            change = dict(proposed[cid])
+            deferred.append(cid)
         else:
             change = entry.get("change")
             if not isinstance(change, dict) or change.get("change_id") != cid:
@@ -1559,7 +1583,7 @@ def apply_decision(pending, decision):
     # `approved` carries the effective objects, which for an
     # edited change is the EDITED one.
     return {"approved": approved, "rejected": rejected, "edited": edited,
-            "history": history,
+            "deferred": deferred, "history": history,
             "decided_by": decision["decided_by"].strip(),
             "decided_at": decision["decided_at"].strip()}
 
@@ -1612,7 +1636,8 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
     given, is called with `(attempt, path, cog_sha256, attempts_so_far)`
     BEFORE each invocation — the retry included — so the Track carries the
     retry's own digests and its own path before it is paid for."""
-    seam = seam or {}
+    seam = dict(seam or {})
+    before_invoke = seam.pop('_before_invoke', None)
     envelope_path = Path(envelope_path)
     path_for = path_for or (
         lambda n: attempt_envelope_path(envelope_path, n))
@@ -1621,6 +1646,8 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
     digest = cog_sha256 or cog_package_sha256(cog_dir)
     path = Path(path_for(number))
     attempts = []
+    if before_invoke:
+        before_invoke()
     if reserve is not None:
         reserve(number, path, digest, list(attempts))
     envelope = invoke_cog(cog_dir, task, request_path, **seam)
@@ -1633,6 +1660,8 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
         number += 1
         digest = cog_package_sha256(cog_dir)
         path = Path(path_for(number))
+        if before_invoke:
+            before_invoke()
         if reserve is not None:
             reserve(number, path, digest, list(attempts))
         envelope = invoke_cog(cog_dir, task, request_path, **seam)
@@ -2366,10 +2395,29 @@ def _run_single(step, cog_dir, run_dir, context, seam=None,
             **_repeat_fields(records, all_envelopes),
         }
         return fields, payloads, envelopes
-    envelope, gate, attempts, cog_sha256, seconds, envelope_path = _attempt(
-        cog_dir, task, request_path, envelope_path, on_fail, seam,
-        first_attempt=_highest_attempt((prior or {}).get("attempts")) + 1,
-        request_sha256=canonical_sha256(request))
+    request_sha = canonical_sha256(request)
+    current_cog_sha = cog_package_sha256(cog_dir)
+    earlier = list((prior or {}).get('attempts') or [])
+    latest = earlier[-1] if earlier else None
+    recovered = (_envelope_on_disk(latest) if latest and (prior or {}).get('status') == 'running'
+                 and latest.get('phase') == ASKING and _same_question(latest, request_sha, current_cog_sha) else None)
+    if recovered is not None and gate_envelope(recovered)['status'] != 'fail':
+        envelope = recovered
+        gate = gate_envelope(envelope)
+        attempts = earlier[:-1] + [dict(latest, phase=ANSWERED)]
+        cog_sha256, seconds = current_cog_sha, 0.0
+        envelope_path = Path(latest['envelope'])
+    else:
+        def reserve(number, path, cog_sha, before):
+            if progress:
+                progress({'attempts': earlier + before + [_attempt_entry(number, path, request_sha, cog_sha, ASKING)],
+                          'request': str(request_path.resolve()), 'request_sha256': request_sha,
+                          'cog_sha256': cog_sha, 'envelope': str(path.resolve())})
+        envelope, gate, fresh, cog_sha256, seconds, envelope_path = _attempt(
+            cog_dir, task, request_path, envelope_path, on_fail, seam,
+            first_attempt=_highest_attempt(earlier) + 1,
+            request_sha256=request_sha, reserve=reserve)
+        attempts = earlier + fresh
     fields = {
         "cog": envelope.get("cog") or identity,
         "cog_sha256": cog_sha256,
@@ -2507,7 +2555,7 @@ def _paused_output(run_dir, track, sid, pending_path, track_path):
 
 
 def _execute(spec, track, context, run_dir, package_root, authority, run_id,
-             done=None, decisions=None, previous=None):
+             done=None, decisions=None, previous=None, cycle_policy=None):
     """The step loop, shared by a fresh run and a resume.
 
     `done` holds the records of steps this run already finished — they are
@@ -2599,6 +2647,8 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
             seam = {"grant_path": str(Path(grant_path).resolve()),
                     "run_id": run_id,
                     "journal_path": str(journal_path.resolve())}
+        if cycle_policy:
+            seam['_before_invoke'] = lambda sid=sid: cycle_policy['reserve'](sid)
 
         # ---- durability: the Track says the step is RUNNING, with the grant
         # and journal it was given, BEFORE the Cog is launched. Nothing
@@ -2616,6 +2666,8 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
                 or earlier.get("elements") is not None:
             carried = {"repeats": earlier.get("repeats"),
                        "elements": earlier.get("elements")}
+        if earlier.get('attempts'):
+            carried.update({key: earlier[key] for key in ('attempts', 'request', 'request_sha256', 'cog_sha256', 'envelope') if key in earlier})
         track["steps"].append(op_track.step_record(
             step, "running", repeat=repeat_spec,
             grant=str(Path(grant_path).resolve()) if grant_path else None,
@@ -2655,7 +2707,7 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
             fields, payload, envelope_for_context = _run_single(
                 step, cog_dir, run_dir, context, seam,
                 prior=previous.get(sid),
-                progress=checkpoint if repeat_spec else None)
+                progress=checkpoint)
             authority_use = (payload or {}).get("authority_use") \
                 if isinstance(payload, dict) else None
         fields["grant"] = str(Path(grant_path).resolve()) if grant_path else None
@@ -2663,6 +2715,16 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
         fields["authority_use"] = authority_use
         gate = fields["gate"]
         on_fail = step.get("on_fail", "stop")
+
+        if cycle_policy and sid == cycle_policy['outcome_step'] and gate['status'] != 'fail':
+            outcome = payload.get(cycle_policy['outcome_field']) if isinstance(payload, dict) else None
+            if outcome in cycle_policy['transitions']:
+                track['steps'][position_in_track] = op_track.step_record(step, STEP_STATUS[gate['status']], **fields)
+                track['status'] = 'cycle-transition'
+                track['cycle_outcome'] = outcome
+                op_track.save(track, run_dir)
+                return 4, {'ok': False, 'status': 'cycle-transition', 'outcome': outcome,
+                           'run_dir': str(run_dir), 'track': str(run_dir / 'track.json')}
 
         # ---- the human Gate: only a PASSING envelope reaches the human.
         artifact = None
@@ -2760,7 +2822,7 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
 
 
 def run(package_root, request_path, dry_run=False, runs_dir=None,
-        authority_path=None):
+        authority_path=None, cycle_policy=None, seed=None, request_dir=None):
     """Run this Op package's spec over one request. Returns (exit code,
     the JSON object the CLI prints)."""
     package_root = Path(package_root).resolve()
@@ -2797,29 +2859,37 @@ def run(package_root, request_path, dry_run=False, runs_dir=None,
 
     track = op_track.new_track(spec, run_id, input_request,
                                status="planned" if dry_run else "running")
+    if cycle_policy:
+        track['cycle_owner'] = cycle_policy['owner']
     track["authority"] = ({"path": str(Path(authority_path).resolve()),
                            "sha256": sha256_file(authority_path)}
                           if authority_path else None)
-    track["request_dir"] = str(request_path.parent)
+    track["request_dir"] = str(Path(request_dir).resolve() if request_dir else request_path.parent)
     context = {
         "inputs": values,
         "steps": {},
         "run": {"dir": str(run_dir), "id": run_id},
-        "request": {"dir": str(request_path.parent)},
+        "request": {"dir": track['request_dir']},
     }
     lock = RunLock(run_dir).acquire()
     try:
+        if seed:
+            track['steps'] = seed
+            decisions = _restore_context(track, context)
+        else:
+            decisions = {}
         op_track.save(track, run_dir)
         if dry_run:
             return _plan(spec, track, run_dir, context)
         return _execute(spec, track, context, run_dir, package_root, authority,
-                        run_id)
+                        run_id, done={record['id']: record for record in seed or []},
+                        decisions=decisions, cycle_policy=cycle_policy)
     finally:
         lock.release()
 
 
 def resume(package_root, run_dir, decision_path=None, authority_path=None,
-           renew_budgets=None):
+           renew_budgets=None, cycle_policy=None):
     """Continue a paused, interrupted or FAILED run: apply the human's
     decision to the step that asked for it, and carry on from the next step.
 
@@ -2844,7 +2914,7 @@ def resume(package_root, run_dir, decision_path=None, authority_path=None,
     lock = RunLock(run_dir).acquire()
     try:
         return _resume(package_root, run_dir, track_path, decision_path,
-                       authority_path, renew_budgets)
+                       authority_path, renew_budgets, cycle_policy)
     finally:
         lock.release()
 
@@ -2993,8 +3063,10 @@ def _refuse_pre_0_6_6(track):
 
 
 def _resume(package_root, run_dir, track_path, decision_path,
-            authority_path, renew_budgets=None):
+            authority_path, renew_budgets=None, cycle_policy=None):
     track = json.loads(track_path.read_text())
+    if track.get('cycle_owner') and (cycle_policy is None or cycle_policy.get('owner') != track['cycle_owner']):
+        raise op_spec.OpSpecError('This child belongs to a bounded cycle; use pixi run cycle -- --resume ' + track['cycle_owner'] + ' --decision DECISION_FILE.')
     spec = op_spec.load(package_root / "op.yaml")
     if spec.sha256() != track.get("spec_sha256"):
         raise op_spec.OpSpecError(
@@ -3172,7 +3244,7 @@ def _resume(package_root, run_dir, track_path, decision_path,
             previous[sid] = _renewed_budget(previous[sid])
     return _execute(spec, track, context, run_dir, package_root, authority,
                     track["run_id"], done=done, decisions=decisions,
-                    previous=previous)
+                    previous=previous, cycle_policy=cycle_policy)
 
 
 def main(argv=None):

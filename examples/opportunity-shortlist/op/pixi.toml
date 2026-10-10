@@ -13,6 +13,7 @@ pyyaml = "*"
 jsonschema = "*"
 
 [tasks]
+cycle = "python src/op_cycle.py"
 op = "python src/op_runner.py"
 test = "python -m unittest discover -s tests -v"
 

@@ -42,3 +42,6 @@ Copyright 2026 OpenTeams. This repository is licensed under the [Apache License 
 The maintained builder components have also been updated to Apache-2.0; see
 the [migration record](docs/licensing-migration.md) for scope and commits.
 Third-party dependencies and external services retain their own terms.
+
+The [builder usability PR set](docs/builder-usability-prs-2026-10-08.md) maps the
+learning fixes to their public PRs, review order, demo progression and exercises.
