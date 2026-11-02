@@ -11,6 +11,8 @@ python = ">=3.11"
 # op.yaml is YAML; declared input schemas are JSON Schema
 pyyaml = "*"
 jsonschema = "*"
+# trust-store floor: 2026.10.23 drops the compromised eMudhra emSign roots
+ca-certificates = ">=2026.10.23"
 
 [tasks]
 cycle = "python src/op_cycle.py"

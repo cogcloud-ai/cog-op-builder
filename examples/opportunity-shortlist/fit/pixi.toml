@@ -12,6 +12,8 @@ python = ">=3.11"
 pyyaml = "*"
 # normative question, answer, input and output schema validation
 jsonschema = "*"
+# trust-store floor: 2026.10.23 drops the compromised eMudhra emSign roots
+ca-certificates = ">=2026.10.23"
 
 [tasks]
 export-fixtures = "python src/cog_cli.py export-fixtures"
