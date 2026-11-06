@@ -12,6 +12,8 @@ python = ">=3.11"
 pyyaml = "*"
 # normative input/output schema validation
 jsonschema = "*"
+# trust-store floor: 2026.10.23 drops the compromised eMudhra emSign roots
+ca-certificates = ">=2026.10.23"
 
 [tasks]
 # --- usage ops (face users and the Op layer) ---
