@@ -13,119 +13,119 @@
       "url": "https://github.com/cogcloud-ai/cog-op-designer.git",
       "role": "core",
       "description": "Propose Ops, reuse existing Cogs, and describe missing Cogs.",
-      "revision": "ddd10b949e89bf53ef5694d0b90979f70df6c2aa"
+      "revision": "7ad158967b1286666767384cda402d7932b51373"
     },
     {
       "name": "cog-author",
       "url": "https://github.com/cogcloud-ai/cog-author.git",
       "role": "core",
       "description": "Turn briefs into contracts and author or revise Cog source.",
-      "revision": "a4c00548fb258b015678c2c1b467c9e553037f4a"
+      "revision": "54f70be0ebbc0f4ac414c6ba14fe0de8e43bc9ca"
     },
     {
       "name": "cog-build-evaluator",
       "url": "https://github.com/cogcloud-ai/cog-build-evaluator.git",
       "role": "core",
       "description": "Plan acceptance cases and review candidate-bound evidence.",
-      "revision": "bfbac470610d8a52d28d089acdb92a4b002decc4"
+      "revision": "bab1b710e59174835705c000c2bcb52afc226882"
     },
     {
       "name": "cog-build-candidate",
       "url": "https://github.com/cogcloud-ai/cog-build-candidate.git",
       "role": "core",
       "description": "Materialize validated authored source as a checked package.",
-      "revision": "dac492bc383f7aa3ec7cc66ff99608edfa993efb"
+      "revision": "04327ae88e2754e5b1b4b5c3c1e7cf97d6d734b7"
     },
     {
       "name": "cog-verify-candidate",
       "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
       "role": "core",
       "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
-      "revision": "22d1367177b45aefdce67f2cbdb58fd670394356"
+      "revision": "bc982f83c4a6572581a18cc6bd9ab3ff151bb014"
     },
     {
       "name": "op-cog-builder",
       "url": "https://github.com/cogcloud-ai/op-cog-builder.git",
       "role": "core",
       "description": "Compose design \u2192 contract Gate \u2192 author \u2192 materialize \u2192 plan \u2192 verify \u2192 review \u2192 candidate Gate.",
-      "revision": "18fef65533d493f995e65c477807629093fd964b"
+      "revision": "b8aa7bf635cc27a37657314b68954ee76b31932b"
     },
     {
       "name": "cog-workbench",
       "url": "https://github.com/cogcloud-ai/cog-workbench.git",
       "role": "core",
       "description": "Local client, provider admission, composed invocation, and build UI.",
-      "revision": "fc9bb85feb8c749d57b4f6722ec8725cf0e5a7e7"
+      "revision": "c3db47663c95d8c03e50963802a16976e19e1388"
     },
     {
       "name": "cog-chatgpt",
       "url": "https://github.com/cogcloud-ai/cog-chatgpt.git",
       "role": "provider",
       "description": "Use a separately installed Codex CLI and the user\u2019s ChatGPT login.",
-      "revision": "f1606a59679d63f3ef4cd0583ff63650126d4dff"
+      "revision": "27b5f096beb89e76c64fff2d3b71f99a81bde6af"
     },
     {
       "name": "cog-claude",
       "url": "https://github.com/cogcloud-ai/cog-claude.git",
       "role": "provider",
       "description": "Use a separately installed Claude Code CLI and the user\u2019s Claude login.",
-      "revision": "864937ec5c70f29b2971fbcd3dab9bb8c608bb49"
+      "revision": "7ade61b4617099499f003b6f8b4548229f735be2"
     },
     {
       "name": "cog-openrouter",
       "url": "https://github.com/cogcloud-ai/cog-openrouter.git",
       "role": "provider",
       "description": "Admit and invoke a direct OpenRouter model through a local gateway.",
-      "revision": "27060d041becac3b1f12c6c7b0418c17d672616e"
+      "revision": "39359e3fc007864680489186497bf0cb4c514948"
     },
     {
       "name": "cog-turn-harness",
       "url": "https://github.com/cogcloud-ai/cog-turn-harness.git",
       "role": "provider",
       "description": "Provide a JSON interaction using a separately admitted model.",
-      "revision": "e597167292cf35d58773f4d2bd21e47e5e14829c"
+      "revision": "f5bc530e42dc1981de10ac9f80f4f45e746e354b"
     },
     {
       "name": "cog-typesafe",
       "url": "https://github.com/cogcloud-ai/cog-typesafe.git",
       "role": "provider",
       "description": "TypeSafe's Jev System One model: typed, calibrated decisions through explicit versioned bindings.",
-      "revision": "b59b46b4e891498dcdc965eb54f9fbef0237d284"
+      "revision": "c623ead3c5a345f5a1e487742d308e386e33eafb"
     },
     {
       "name": "cog-system-one-adapter",
       "url": "https://github.com/cogcloud-ai/cog-system-one-adapter.git",
       "role": "provider",
       "description": "System One typed answers from a separately admitted LLM through TypeSafe's System One adapter.",
-      "revision": "bb3a4ca6bf1e48e4fda5d295e5fd12be67625ca3"
+      "revision": "fea3f720f314d27f52f5f26ca1b799839e260b4f"
     },
     {
       "name": "op-builder-smoke",
       "url": "https://github.com/cogcloud-ai/op-builder-smoke.git",
       "role": "example",
       "description": "Exercise real code-Cog handoffs, stopping, and durable resume.",
-      "revision": "94340dcefc4ce17adb5f252f1f3a5d38a372a308"
+      "revision": "dfa8ebab61f09d94549aa3cfdb32c4d0e3d6a9a1"
     },
     {
       "name": "cog-word-tally",
       "url": "https://github.com/cogcloud-ai/cog-word-tally.git",
       "role": "example",
       "description": "Word-frequency tally: the first Cog built through both builder acceptance Gates; the smoke Op's fixture.",
-      "revision": "7a6ed68957489d99a2ebbd38d533c7b803658499"
+      "revision": "b2b3ec5890ac69742193309f0c9365fa295a7773"
     },
     {
       "name": "cog-qwen",
       "url": "https://github.com/cogcloud-ai/cog-qwen.git",
       "role": "provider",
       "description": "Local Qwen3-4B inference with pinned public weights and llama.cpp; pair with the turn harness.",
-      "revision": "c18c0a8f7cf164cf6329535ca5229586c801a30b"
+      "revision": "3a724c0c075b8acf38acd66ce56e087d7bce9653"
     },
     {
       "name": "cog-brief-router",
       "url": "https://github.com/cogcloud-ai/cog-brief-router.git",
       "role": "example",
       "description": "Example decision Cog: recommends a code, context or decision Cog for a missing-Cog brief.",
-      "revision": "694dbbb3bfc8d5ced3e4d9423e138072c420f992"
+      "revision": "0f8a00f086a6d2c6232a39117829df5e10002ab7"
     }
   ]
 }
