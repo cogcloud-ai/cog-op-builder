@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Rank opportunity assessments and propose a human-reviewed shortlist."
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
+requires-pixi = ">=0.82.1"
 
 [dependencies]
 # 3.11+: the machinery reads this file's [tool.cog] manifest with tomllib

@@ -19,6 +19,9 @@ MACHINE_PATH = re.compile(r'(?:/' r'Volumes/[^\s\"\'`<>]+|/(?:Users|home)/[^\s/\
 SIBLING = re.compile(r'(?:\.\./)+((?:cog-|op-)[A-Za-z0-9_-]+|planning|public|_xfer\w*|trial-workspaces)(?:/[^\s\"\'`<>),}]*)?')
 PRIVATE = re.compile(r'\b(?:cog-' r'demo|cog-' r'forge|cog-' r'issue-classifier|cog-' r'collab-qwen35b)\b')
 LINK = re.compile(r'!?\[[^\]\n]*\]\(<?([^\s)>]+)>?(?:\s+"[^"]*")?\)')
+# Older conda-forge bundles still trust the eMudhra chain whose intermediate keys were compromised (CVE-2026-111943).
+CA_MINIMUM = (2026, 10, 23)
+CA_PACKAGE = re.compile(r'/ca-certificates-(\d+(?:\.\d+)+)-[^/\s]+\.(?:conda|tar\.bz2)')
 
 
 def git(root, *args):
@@ -115,6 +118,20 @@ def scan(workspace, suite=SUITE):
     return findings
 
 
+def ca_bundle_errors(workspace, suite=SUITE):
+    errors = []
+    for name in sorted({suite.name, *(r['name'] for r in repositories(suite))}):
+        root = (workspace / name).resolve()
+        locks = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z', '--cached', '--others', '--exclude-standard',
+                                         '--', 'pixi.lock', '*/pixi.lock']).decode().split('\0')
+        for rel in sorted(set(filter(None, locks))):
+            versions = {match.group(1) for match in CA_PACKAGE.finditer((root / rel).read_text())}
+            for version in sorted(versions):
+                if tuple(map(int, version.split('.'))) < CA_MINIMUM:
+                    errors.append(f'{name}/{rel}: ca-certificates {version} predates 2026.10.23 and still trusts the compromised eMudhra chain')
+    return errors
+
+
 def key(item):
     return item['path'], item['rule'], item['fingerprint']
 
@@ -135,6 +152,7 @@ def check(workspace, suite=SUITE, strict=False):
     for identity, item in allowed.items():
         if counts.get(identity, 0) < item['count']:
             errors.append(f"{item['path']}: remove or reduce stale exception for {item['rule']}")
+    errors.extend(ca_bundle_errors(workspace, suite))
     print(f"Boundary scan: {len(findings)} findings; {sum(i['count'] for i in allowed.values())} explicitly recorded legacy occurrences.", flush=True)
     return errors
 

@@ -14,7 +14,7 @@ uses a separately admitted provider and can incur charges.
 
 Use the public [builder workspace setup](../../docs/getting-started.md) to obtain
 the manifest-listed sibling repositories. From that workspace, with Git,
-Python 3.11+ and Pixi installed:
+Python 3.11+ and Pixi 0.82.1 or newer installed:
 
 ```sh
 cd cog-op-builder/examples/opportunity-shortlist
