@@ -84,6 +84,18 @@ class WorkspaceTests(unittest.TestCase):
         (self.component / 'caller.py').write_text("CALLER = ROOT.parent / '" + 'cog-' + "issue-classifier'\n")
         self.assertEqual([x['rule'] for x in self.scan()], ['private-reference'])
 
+    def test_stale_ca_bundle_in_any_lock_fails(self):
+        url = '      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-{}-hbd8a1cb_0.conda\n'
+        (self.component / 'pixi.lock').write_text(url.format('2026.10.23'))
+        nested = self.suite / 'examples/demo'
+        nested.mkdir(parents=True)
+        (nested / 'pixi.lock').write_text(url.format('2026.10.23'))
+        self.assertEqual(checker.check(self.workspace, self.suite), [])
+        (nested / 'pixi.lock').write_text(url.format('2026.7.22'))
+        errors = checker.check(self.workspace, self.suite)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('cog-op-builder/examples/demo/pixi.lock: ca-certificates 2026.7.22', errors[0])
+
     def test_missing_checkout(self):
         self.component.rename(self.workspace / 'elsewhere')
         self.assertTrue(any('missing Git checkout' in x for x in checker.check(self.workspace, self.suite)))
