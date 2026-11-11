@@ -139,13 +139,26 @@ the resume, save → issue the grant, create the journal, record the step
 `running`, save → invoke.
 
 Exit codes: 0 completed (or completed-with-problems, or a planned dry run),
-1 failed, 2 an invalid spec, request or authority document (and a run another
-process holds), 3 paused for a human. Stdout is one JSON object.
+1 failed — including a started run that could not evaluate a mapping, which
+the Track records as a failed step (or failed outputs) with a `reason`
+(0.10.0) — 2 an invalid spec, request or authority document (and a run
+another process holds), 3 paused for a human. Stdout is one JSON object.
 
 A run validates every step's Cog declaration before it creates anything (so
 a refused declaration leaves no run directory and no half-open Track), and a
 run that stops records the steps it never reached as `not-reached`, so the
 Track always lists every step of the spec.
+
+The document's `schema` picks the run-time rules (0.11.0). A run of an
+`openteams/op-manifest [0.2]` document is refused before anything is created
+when a named Cog is not present or is at another version than the step
+states; an envelope whose `cog.id` is not the step's Cog is a failed
+invocation; a `$path` that evaluates to a value beginning with `~` fails the
+step; and a proposed change names what it changes as `target`, which is what
+a write admission must list, what an edit may not change, and what the grant
+carries. A `[0.1]` document runs exactly as it did under 0.10.0: version
+differences warn, a missing Cog fails only when invoked, and a change names
+`repository`.
 """
 from __future__ import annotations
 
@@ -239,7 +252,11 @@ def envelope_problems(value):
     are checked, not merely field presence: an `ok` that is the string
     "false", or `problems` that are bare strings, are malformed output, not a
     result — they become a controlled invocation failure with the output kept
-    as evidence."""
+    as evidence.
+
+    An `error` is `null` or `{code, detail}`, and an envelope that carries
+    one is never `ok` (machinery 0.10.0): `ok: true` beside an error object
+    is malformed output, so it can never reach the policy as a pass."""
     if not isinstance(value, dict):
         return ["the Cog's result is not a JSON object."]
     problems = []
@@ -252,6 +269,25 @@ def envelope_problems(value):
     if not isinstance(value.get("ok"), bool):
         problems.append(f"the Cog's result declares ok {value.get('ok')!r}, "
                         f"which is not true or false.")
+    error = value.get("error")
+    if error is not None:
+        if not isinstance(error, dict):
+            problems.append(f"the Cog's result declares error {error!r}, "
+                            f"which is neither null nor an object with code "
+                            f"and detail.")
+        else:
+            code = error.get("code")
+            if not isinstance(code, str) or not code:
+                problems.append(f"the Cog's result declares error.code "
+                                f"{code!r}, which is not a non-empty string.")
+            if not isinstance(error.get("detail"), str):
+                problems.append(f"the Cog's result declares error.detail "
+                                f"{error.get('detail')!r}, which is not a "
+                                f"string.")
+            if value.get("ok") is True:
+                problems.append("the Cog's result declares ok: true and an "
+                                "error; an envelope that carries an error is "
+                                "a failed invocation, never ok.")
     listed = value.get("problems")
     if not isinstance(listed, list) or any(not isinstance(p, dict)
                                            for p in listed):
@@ -259,36 +295,93 @@ def envelope_problems(value):
         # list the Gate may assume.
         problems.append("the Cog's result declares problems that are not a "
                         "list of problem objects.")
+    else:
+        for index, problem in enumerate(listed):
+            problems.extend(problem_shape_problems(problem, index))
     return problems
 
 
+#: The severities a problem may carry in envelope v1. `warn` is the
+#: deprecated spelling of `warning` and is still accepted in envelope 1.
+PROBLEM_SEVERITIES = ("error", "warning", "warn")
+
+
+def problem_shape_problems(problem, index):
+    """Why one entry of `problems` is not `{check, detail, severity}` as
+    envelope v1 defines it (machinery 0.10.0). A missing or unrecognized
+    severity is malformed output: the Gate cannot tell a warning from an
+    error it has never heard of, so it never guesses `pass-with-problems`."""
+    where = f"the Cog's result's problems[{index}]"
+    found = []
+    check = problem.get("check")
+    if not isinstance(check, str) or not check:
+        found.append(f"{where} declares check {check!r}, which is not a "
+                     f"non-empty string.")
+    if not isinstance(problem.get("detail"), str):
+        found.append(f"{where} declares detail {problem.get('detail')!r}, "
+                     f"which is not a string.")
+    severity = problem.get("severity")
+    if severity not in PROBLEM_SEVERITIES:
+        found.append(f"{where} declares severity {severity!r}; a problem's "
+                     f"severity is one of {list(PROBLEM_SEVERITIES)}.")
+    return found
+
+
 def failed_envelope(cog_dir, task, detail, raw=None, carried=None,
-                    evidence=None):
+                    evidence=None, emitted=None, code="invocation-failed"):
     """A synthetic ok:false envelope for an invocation that never produced a
-    usable result. What the Cog did emit is kept in `raw` as evidence; when
-    that output was a well-formed envelope, its identity, binding and
-    problems are carried across rather than thrown away.
+    usable result. When the Cog's output was a well-formed envelope, its
+    identity, binding and problems are carried across rather than thrown
+    away.
 
     `error.evidence` is the ONE place process evidence lives, on EVERY
     synthetic failure: `{command, returncode, stdout_tail, stderr_tail}` and,
     when the seam tried the other request flag first, `previous_attempts`
-    with the same fields (BUILDING_OPS, "When a Cog invocation fails")."""
+    with the same fields (BUILDING_OPS, "When a Cog invocation fails").
+
+    The synthesized envelope is itself envelope v1 (machinery 0.10.0).
+    `raw` is text or null, as in any envelope: it holds what the Cog printed
+    when that held no envelope at all. A JSON object the Cog DID print — a
+    malformed envelope, or a well-formed one from a process that exited
+    nonzero — is kept whole as `error.evidence.envelope` (EMITTED); before
+    0.10.0 it sat in `raw`, which envelope v1 types as a string. Only the
+    carried fields envelope v1 can type are carried: an identity with a
+    non-empty string id, a binding object, and well-formed problems.
+    `code` is `invocation-failed` except for an envelope naming another Cog,
+    which is `cog-identity-mismatch` so `retry-once` can leave it alone."""
     carried = carried if isinstance(carried, dict) else {}
+    error = {"code": code, "detail": str(detail)}
+    if evidence is not None or emitted is not None:
+        record = dict(evidence or {})
+        if emitted is not None:
+            record["envelope"] = emitted
+        error["evidence"] = record
+    binding = carried.get("binding")
+    listed = carried.get("problems")
     return {
         "envelope": 1,
-        "cog": carried.get("cog") or {"id": f"unavailable:{Path(cog_dir).name}",
-                                      "version": None},
+        "cog": _carried_cog(carried.get("cog"), cog_dir),
         "task": task,
         "ok": False,
-        "error": {"code": "invocation-failed", "detail": detail,
-                  "evidence": evidence},
+        "error": error,
         "payload": None,
-        "raw": raw,
-        "problems": [p for p in carried.get("problems") or []
-                     if isinstance(p, dict)],
-        "binding": carried.get("binding"),
+        "raw": raw if isinstance(raw, str) else None,
+        "problems": [p for p in (listed if isinstance(listed, list) else [])
+                     if isinstance(p, dict) and not problem_shape_problems(p, 0)],
+        "binding": binding if isinstance(binding, dict) else None,
         "timing": {"latency_s": 0},
     }
+
+
+def _carried_cog(cog, cog_dir):
+    """The identity a synthesized envelope names: the Cog's own, when it
+    stated one envelope v1 can carry (a non-empty string id, a string or
+    null version), and otherwise the directory the runner invoked."""
+    if isinstance(cog, dict) and isinstance(cog.get("id"), str) and cog["id"]:
+        version = cog.get("version")
+        return {"id": cog["id"],
+                "version": version if isinstance(version, str) else None}
+    return {"id": f"unavailable:{Path(cog_dir).name}", "version": None}
 
 
 def _evidence(command, returncode, stdout, stderr, previous):
@@ -306,7 +399,7 @@ def _evidence(command, returncode, stdout, stderr, previous):
 
 
 def invoke_cog(cog_dir, task, request_path, grant_path=None, run_id=None,
-               journal_path=None):
+               journal_path=None, expected_cog_id=None):
     """Run one declared Cog task and return its envelope.
 
     `grant_path`, `run_id` and `journal_path` are the invocation context a
@@ -319,7 +412,11 @@ def invoke_cog(cog_dir, task, request_path, grant_path=None, run_id=None,
     always has something to decide about: a command that could not be
     launched, a nonzero exit (even after printing an envelope — a process
     that dies at 139 has not succeeded), output with no envelope, and a
-    malformed envelope all arrive the same way.
+    malformed envelope all arrive the same way. So does, when
+    EXPECTED_COG_ID is given (a `[0.2]` step, 0.11.0), an envelope whose
+    `cog.id` is not that id: the failure names the step's Cog, keeps the
+    other envelope as evidence, and is an `IdentityMismatch`. When that
+    `cog.id` can be read, the mismatch wins even over a malformed envelope.
 
     The run lock's descriptor is passed to the child (`pass_fds`): while a
     Cog is running, the run stays locked even if this runner dies."""
@@ -364,17 +461,71 @@ def invoke_cog(cog_dir, task, request_path, grant_path=None, run_id=None,
         return failed_envelope(cog_dir, task, detail, raw=stdout,
                                evidence=evidence)
     malformed = envelope_problems(envelope)
+    if expected_cog_id is not None and (
+            not malformed or stated_cog_id(envelope) is not None):
+        # Checked BEFORE the envelope's shape (0.11.0): a result that names
+        # another Cog is that Cog's, whatever else is wrong with it, so a
+        # malformed envelope whose `cog.id` can be read and differs is an
+        # identity mismatch — never retried — and not an ordinary malformed
+        # result that `retry-once` would invoke again. Its shape problems
+        # stay in the detail, and the envelope itself in the evidence.
+        impostor = identity_problem(envelope, expected_cog_id)
+        if impostor:
+            if malformed:
+                impostor += (" The result is also not envelope v1: "
+                             + " ".join(malformed))
+            return IdentityMismatch(failed_envelope(
+                cog_dir, task, impostor,
+                carried={"cog": {"id": expected_cog_id, "version": None}},
+                evidence=evidence, emitted=envelope,
+                code=IDENTITY_MISMATCH))
     if malformed:
-        return failed_envelope(cog_dir, task, " ".join(malformed), raw=envelope,
-                               evidence=evidence)
+        return failed_envelope(cog_dir, task, " ".join(malformed),
+                               evidence=evidence, emitted=envelope)
     if completed.returncode != 0:
         detail = (f"the Cog command for task {task!r} exited "
                   f"{completed.returncode}")
         if stderr:
             detail += f": {stderr[-400:]}"
-        return failed_envelope(cog_dir, task, detail, raw=envelope,
-                               carried=envelope, evidence=evidence)
+        return failed_envelope(cog_dir, task, detail, carried=envelope,
+                               evidence=evidence, emitted=envelope)
     return envelope
+
+
+#: The error code of an envelope that names another Cog (0.11.0). It is
+#: never retried: the same invocation would name the same Cog again.
+IDENTITY_MISMATCH = "cog-identity-mismatch"
+
+
+class IdentityMismatch(dict):
+    """The synthesized envelope for a mismatch the RUNNER detected on a
+    `[0.2]` step (0.11.0): an ordinary envelope dict, written and read like
+    any other, whose type tells `_attempt` not to retry it. The error code
+    alone cannot say so — a Cog may report `cog-identity-mismatch` as its own
+    `error.code`, and under `[0.1]` such a failure is retried as before — and
+    nothing parsed from a Cog's output is ever of this type."""
+
+
+def stated_cog_id(envelope):
+    """The `cog.id` a result states, when it can be read (a string), else
+    None."""
+    cog = envelope.get("cog") if isinstance(envelope, dict) else None
+    stated = cog.get("id") if isinstance(cog, dict) else None
+    return stated if isinstance(stated, str) else None
+
+
+def identity_problem(envelope, expected_cog_id):
+    """Why ENVELOPE is not the step's Cog's result, or None (machinery
+    0.11.0, `[0.2]` documents only): its `cog.id` must equal the step's
+    `cog.id`, and an envelope naming another Cog — or none — is a failed
+    invocation."""
+    cog = envelope.get("cog")
+    stated = cog.get("id") if isinstance(cog, dict) else None
+    if stated == expected_cog_id:
+        return None
+    return (f"the Cog's result names cog id {stated!r}, but the step invokes "
+            f"{expected_cog_id!r}; an envelope naming another Cog is a "
+            f"failed invocation.")
 
 
 def gate_envelope(envelope):
@@ -396,7 +547,8 @@ def gate_envelope(envelope):
             f"Cog invocation failed: {error.get('code', 'unknown')}: "
             f"{error.get('detail', '')}".rstrip())
     # `envelope_problems` above has already established that `problems` is a
-    # list of objects: the policy reads it without re-checking its type.
+    # list of `{check, detail, severity}` objects with a severity envelope v1
+    # names: the policy reads it without re-checking its shape.
     listed = envelope.get("problems") or []
     error_problems = [p for p in listed if p.get("severity") == "error"]
     reasons.extend(str(p.get("detail") or p.get("check")
@@ -908,12 +1060,16 @@ def _change_id(value):
     return cid if isinstance(cid, str) and cid else None
 
 
-def granted_change(change):
-    """What a grant carries about one approved change: its id, the
-    repository it touches, and BOTH hashes. Every field is required and none
-    may be null — a grant that fails open on a hash authorizes anything."""
+def granted_change(change, target_key="repository"):
+    """What a grant carries about one approved change: its id, what it
+    changes, and BOTH hashes. Every field is required and none may be null —
+    a grant that fails open on a hash authorizes anything.
+
+    TARGET_KEY is the field the change names what it changes under:
+    `target` for a `[0.2]` document, `repository` for a `[0.1]` one (0.11.0);
+    the grant carries it under the same name."""
     entry = {"change_id": change.get("change_id"),
-             "repository": change.get("repository")}
+             target_key: change.get(target_key)}
     for field in CHANGE_HASHES:
         entry[field] = change.get(field)
     return entry
@@ -994,11 +1150,18 @@ def issue_grant(step, context, authority, spec, run_id, run_dir, decisions,
                     raise Denied(f"change {cid!r} was approved against other "
                                  f"content than the one requested")
             admitted = admitted_targets(authority, resource, "write")
+            target_key = spec.change_target_key
             for cid, change in approved.items():
-                repository = change.get("repository")
-                if not isinstance(repository, str) or repository not in admitted:
+                changes_what = change.get(target_key)
+                if not isinstance(changes_what, str) \
+                        or changes_what not in admitted:
+                    if target_key == "target":
+                        raise Denied(f"change {cid!r} names target "
+                                     f"{changes_what!r}, which this run's "
+                                     f"admission does not list as a "
+                                     f"{resource} write target")
                     raise Denied(f"change {cid!r} targets repository "
-                                 f"{repository!r}, which this run was not "
+                                 f"{changes_what!r}, which this run was not "
                                  f"admitted to write")
                 for field in CHANGE_HASHES:
                     problem = hex64_problem(change.get(field), field,
@@ -1017,7 +1180,7 @@ def issue_grant(step, context, authority, spec, run_id, run_dir, decisions,
             # EXACTLY the approved list, never the requested one.
             operations.append({
                 "resource": resource, "action": "write",
-                "changes": [granted_change(c)
+                "changes": [granted_change(c, target_key)
                             for c in record["value"].get("approved") or []],
             })
             provenance = {"kind": "gate", "step": target,
@@ -1070,7 +1233,7 @@ def grant_record(grant, path):
 
 # -------------------------------------------------------- the human gate --
 
-def pending_changes(payload, sid):
+def pending_changes(payload, sid, require_target=False):
     """The proposed changes in a human-gated step's payload.
 
     Change ids are unique STRINGS. Two proposals sharing an id would collapse
@@ -1083,7 +1246,11 @@ def pending_changes(payload, sid):
     and `target_sha256` must be 64 hex characters. A proposal carrying
     `"content_sha256": "placeholder"` used to pass the pause and be
     laundered into a valid digest at approval; now the pause is refused by
-    name."""
+    name.
+
+    REQUIRE_TARGET (a `[0.2]` document, 0.11.0): every change names its
+    `target` as a non-empty string, so a person is never asked to approve a
+    change no admission could let the run write."""
     changes = payload.get("changes") if isinstance(payload, dict) else None
     if not isinstance(changes, list) or any(
             not isinstance(c, dict) or not isinstance(c.get("change_id"), str)
@@ -1093,8 +1260,12 @@ def pending_changes(payload, sid):
             f"`changes` list of objects with a change_id (a string): that is "
             f"what the human decides about.")
     seen, duplicates, unhashed, misstated = set(), [], [], []
+    untargeted = []
     for change in changes:
         cid = change["change_id"]
+        if require_target and (not isinstance(change.get("target"), str)
+                               or not change["target"]):
+            untargeted.append(cid)
         if cid in seen and cid not in duplicates:
             duplicates.append(cid)
         seen.add(cid)
@@ -1122,6 +1293,11 @@ def pending_changes(payload, sid):
             f"Op step {sid!r} proposes change(s) {unhashed} with no "
             f"content_sha256; a proposed change states the hash of its own "
             f"content, and the runner never invents one for it.")
+    if untargeted:
+        raise op_spec.OpSpecError(
+            f"Op step {sid!r} proposes change(s) {untargeted} with no target "
+            f"(a non-empty string); a change names the target it changes, "
+            f"and the write admission is checked against it.")
     if duplicates:
         raise op_spec.OpSpecError(
             f"Op step {sid!r} proposes change id(s) {duplicates} more than "
@@ -1387,10 +1563,13 @@ def normalized_change(change):
     return change
 
 
-def edited_change_problems(edit, proposed, where):
+def edited_change_problems(edit, proposed, where, target_key="repository"):
     """Why an edited change is not the SAME KIND of change as the one it
     replaces. An edit may change content; it may not change what the change
-    IS, the item it targets, or the state it was approved against."""
+    IS, the item it targets, or the state it was approved against.
+
+    TARGET_KEY names what the change changes: `target` in a `[0.2]`
+    document, `repository` in a `[0.1]` one (0.11.0)."""
     problems = []
     unknown = sorted(str(k) for k in set(edit) - set(proposed))
     if unknown:
@@ -1408,10 +1587,10 @@ def edited_change_problems(edit, proposed, where):
         problems.append(f"{where} changes target_sha256; an edit changes what "
                         f"is written, never the target state it was approved "
                         f"against.")
-    if "repository" in proposed and \
-            edit.get("repository") != proposed.get("repository"):
-        problems.append(f"{where} retargets the change to repository "
-                        f"{edit.get('repository')!r}; an edit stays on the "
+    if target_key in proposed and \
+            edit.get(target_key) != proposed.get(target_key):
+        problems.append(f"{where} retargets the change to {target_key} "
+                        f"{edit.get(target_key)!r}; an edit stays on the "
                         f"item that was proposed.")
     return problems
 
@@ -1459,7 +1638,7 @@ def apply_artifact_decision(pending, decision, problems):
             "decided_at": decision["decided_at"].strip()}
 
 
-def apply_decision(pending, decision):
+def apply_decision(pending, decision, change_target_key="repository"):
     """The decision, checked against what was actually proposed, as
     {approved, rejected, edited, history} — or, for a step that asks about
     an artifact (0.7.0), as {verdict, artifact, artifact_sha256, reason,
@@ -1474,7 +1653,10 @@ def apply_decision(pending, decision):
     Every proposed change gets exactly one decision; a decision about
     anything else is refused; an edited change is re-hashed from its edited
     content, and THAT hash is what a write grant will carry. A decision can
-    only select among the proposed changes: it can never add one."""
+    only select among the proposed changes: it can never add one.
+
+    CHANGE_TARGET_KEY is the field an edit may not change: `target` for a
+    `[0.2]` document, `repository` (the default) for a `[0.1]` one."""
     problems = []
     actual_sha256 = canonical_sha256(pending.get("payload"))
     if decision.get("run_id") != pending["run_id"]:
@@ -1559,7 +1741,8 @@ def apply_decision(pending, decision):
                                 f"change (the same change_id).")
                 continue
             edit_problems = edited_change_problems(change, proposed[cid],
-                                                   f"{where}'s edited change")
+                                                   f"{where}'s edited change",
+                                                   change_target_key)
             if edit_problems:
                 problems.extend(edit_problems)
                 continue
@@ -1610,7 +1793,8 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
              request_sha256=None):
     """Invoke once, gate, and retry exactly once when the failure was a
     transport/model failure (ok:false) and the step asked for retry-once.
-    An error-severity problem in an ok envelope is never retried.
+    An error-severity problem in an ok envelope is never retried, nor is an
+    envelope the runner found naming another Cog on a `[0.2]` step (0.11.0).
 
     `seam` carries the invocation context a granted step gets: the grant
     path, the run id, and the journal. It is EMPTY for a step with no
@@ -1638,6 +1822,11 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
     retry's own digests and its own path before it is paid for."""
     seam = dict(seam or {})
     before_invoke = seam.pop('_before_invoke', None)
+    # A [0.2] step names the Cog its envelope must name (0.11.0). Passed to
+    # the seam only when set, so a [0.1] Cog is invoked exactly as before.
+    expected_cog_id = seam.pop('_expected_cog_id', None)
+    if expected_cog_id is not None:
+        seam['expected_cog_id'] = expected_cog_id
     envelope_path = Path(envelope_path)
     path_for = path_for or (
         lambda n: attempt_envelope_path(envelope_path, n))
@@ -1655,8 +1844,14 @@ def _attempt(cog_dir, task, request_path, envelope_path, on_fail, seam=None,
     gate = gate_envelope(envelope)
     attempts.append(_attempt_entry(number, path, request_sha256, digest,
                                    ANSWERED))
+    # Only a mismatch the runner itself detected on a `[0.2]` step is left
+    # alone (0.11.0): a Cog that reports `cog-identity-mismatch` as its own
+    # error is retried like any other failed invocation, under either
+    # profile, as it was under 0.10.0.
+    detected_mismatch = (expected_cog_id is not None
+                         and isinstance(envelope, IdentityMismatch))
     if (gate["status"] == "fail" and on_fail == "retry-once"
-            and not envelope.get("ok")):
+            and not envelope.get("ok") and not detected_mismatch):
         number += 1
         digest = cog_package_sha256(cog_dir)
         path = Path(path_for(number))
@@ -2149,12 +2344,13 @@ def _plan(spec, track, run_dir, context):
     the inputs; list the rest with request: null."""
     for step in spec.ordered:
         request_path = None
-        expressions = [step.get("input") or {}]
+        expressions = [op_spec.step_input(step, context)]
         if step.get("foreach") is not None:
             expressions.append((step["foreach"] or {}).get("items"))
         if (step.get("foreach") is None
                 and not any(op_spec.reads_steps(e) for e in expressions)):
-            request = op_spec.evaluate(step.get("input") or {}, context)
+            request = op_spec.evaluate(op_spec.step_input(step, context),
+                                       context)
             path = Path(run_dir) / "requests" / f"{step['id']}.json"
             op_track.write_json(path, request)
             request_path = str(path.resolve())
@@ -2232,7 +2428,8 @@ def _run_foreach(spec, step, cog_dir, run_dir, context,
             continue
         element_context = dict(context)
         element_context[foreach["as"]] = item
-        request = op_spec.evaluate(step.get("input") or {}, element_context)
+        request = op_spec.evaluate(op_spec.step_input(step, context),
+                                   element_context)
         request_sha256 = canonical_sha256(request)
         request_path = Path(run_dir) / "requests" / step["id"] / f"{index}.json"
         op_track.write_json(request_path, request)
@@ -2359,7 +2556,7 @@ def _run_single(step, cog_dir, run_dir, context, seam=None,
     repeats each carry their own and the step names the last, and a step that
     runs once carries the digest of the attempt whose envelope it kept."""
     task = step["cog"]["task"]
-    request = op_spec.evaluate(step.get("input") or {}, context)
+    request = op_spec.evaluate(op_spec.step_input(step, context), context)
     request_path = Path(run_dir) / "requests" / f"{step['id']}.json"
     op_track.write_json(request_path, request)
     envelope_path = Path(run_dir) / "envelopes" / f"{step['id']}.json"
@@ -2556,7 +2753,76 @@ def _paused_output(run_dir, track, sid, pending_path, track_path):
 
 def _execute(spec, track, context, run_dir, package_root, authority, run_id,
              done=None, decisions=None, previous=None, cycle_policy=None):
-    """The step loop, shared by a fresh run and a resume.
+    """The step loop, shared by a fresh run and a resume, with the run's
+    record kept true when a mapping cannot be evaluated (machinery 0.10.0).
+
+    A `$from` path that is not available, a `foreach.items` that is not a
+    list, a `$run_dir` operand refused at evaluation, a grant requirement or
+    an `outputs` mapping that cannot be evaluated: each used to raise out of
+    the loop, leaving the Track `running` with the step `running` and no
+    reason (or `completed-with-problems` with `outputs: null`) while the
+    process exited 2. Now the step is recorded `failed` with the reasons,
+    the steps after it `not-reached`, the run `failed` with a `reason` —
+    or, for `outputs`, the run `failed` with no failed step — and the exit
+    code is 1, the code of a failed run: a run directory and a Track exist,
+    and the Track says what was attempted (Op Spec core principle 7)."""
+    at = {}
+    try:
+        return _execute_steps(spec, track, context, run_dir, package_root,
+                              authority, run_id, done, decisions, previous,
+                              cycle_policy, at)
+    except op_spec.OpSpecError as exc:
+        if not at:
+            raise
+        return _evaluation_failed(spec, track, run_dir, at, exc.problems)
+
+
+def _evaluation_failed(spec, track, run_dir, at, problems):
+    """Record a run that stopped because a mapping could not be evaluated:
+    the step `at` names (or the outputs) and the reasons, durably."""
+    now = op_track.utc_now()
+    if at.get("outputs"):
+        reason = ("the Op's outputs could not be evaluated: "
+                  + " ".join(problems))
+        track["outputs"] = None
+        failed_step = None
+    else:
+        step, position = at["step"], at["position"]
+        sid = step["id"]
+        reason = (f"step {sid!r} could not be evaluated: "
+                  + " ".join(problems))
+        gate = {"policy": "evaluation", "status": "fail",
+                "reasons": list(problems), "decided_at": now, "guards": []}
+        index = at.get("record")
+        if index is not None:
+            # The step was already recorded `running`, with whatever it had
+            # finished (a foreach's earlier elements, a reserved attempt):
+            # that record is kept and told why it stopped.
+            record = track["steps"][index]
+            record["status"] = "failed"
+            record["gate"] = gate
+            del track["steps"][index + 1:]
+        else:
+            track["steps"].append(op_track.step_record(step, "failed",
+                                                       gate=gate))
+        for later in spec.ordered[position + 1:]:
+            track["steps"].append(op_track.step_record(later, "not-reached"))
+        failed_step = sid
+    track["status"] = "failed"
+    track["failed_step"] = failed_step
+    track["reason"] = reason
+    track["ended_at"] = now
+    track_path = op_track.save(track, run_dir)
+    return 1, {"ok": False, "status": "failed", "failed_step": failed_step,
+               "reason": reason, "problems": list(problems),
+               "run_dir": str(run_dir), "track": track_path}
+
+
+def _execute_steps(spec, track, context, run_dir, package_root, authority,
+                   run_id, done, decisions, previous, cycle_policy, at):
+    """The step loop itself. AT names where the loop is — the step and its
+    position, the index of its `running` record once it has one, or
+    `outputs` — so `_execute` can record an evaluation failure there.
 
     `done` holds the records of steps this run already finished — they are
     never re-run. A step recorded `running` (a crash mid-step) is absent
@@ -2571,11 +2837,14 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
     blocked = set()
     track["steps"] = []
     # This attempt has not stopped anywhere yet. `failed_step` names the step
-    # a `stop` ended the run at, so a resume knows where to pick it up again.
+    # a `stop` ended the run at, so a resume knows where to pick it up again,
+    # and `reason` why a run that could not evaluate a mapping stopped.
     track["failed_step"] = None
+    track["reason"] = None
 
     for position, step in enumerate(spec.ordered):
         sid = step["id"]
+        at.clear()
         prior = done.get(sid)
         if prior is not None:
             track["steps"].append(prior)
@@ -2600,6 +2869,10 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
             context["steps"][sid] = {"payload": None, "envelope": None}
             op_track.save(track, run_dir)
             continue
+
+        # From here on a mapping that cannot be evaluated is recorded against
+        # THIS step (0.10.0).
+        at.update(step=step, position=position, record=None)
 
         # ---- authority: the grant is issued HERE, immediately before the
         # invocation, and only after every step it depends on has passed.
@@ -2649,6 +2922,9 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
                     "journal_path": str(journal_path.resolve())}
         if cycle_policy:
             seam['_before_invoke'] = lambda sid=sid: cycle_policy['reserve'](sid)
+        if spec.profile == op_spec.PROFILE_0_2:
+            # Every envelope must name the step's Cog (0.11.0, [0.2]).
+            seam['_expected_cog_id'] = step["cog"]["id"]
 
         # ---- durability: the Track says the step is RUNNING, with the grant
         # and journal it was given, BEFORE the Cog is launched. Nothing
@@ -2672,6 +2948,7 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
             step, "running", repeat=repeat_spec,
             grant=str(Path(grant_path).resolve()) if grant_path else None,
             journal=str(journal_path) if journal_path else None, **carried))
+        at["record"] = position_in_track
         op_track.save(track, run_dir)
 
         def checkpoint(partial, _at=position_in_track):
@@ -2691,7 +2968,7 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
                 record[key] = _kept_by_index(key, record.get(key), value)
             op_track.save(track, run_dir)
 
-        cog_dir = (package_root / step["cog"]["source"]).resolve()
+        cog_dir = op_spec.cog_source_dir(package_root, step)
         # The Cog as it is AT INVOCATION: what answers belongs to the version
         # that answered, and a resume reuses an answer only from the same one
         # (machinery 0.6.2). The digest is taken
@@ -2744,6 +3021,25 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
                     "decides": op_spec.DECIDES_ARTIFACT,
                     "envelope_status": gate["status"],
                     "reasons": artifact_problems + list(gate["reasons"]),
+                    "decided_at": op_track.utc_now(), "guards": []}
+        if (op_spec.gate_policy(step) == op_spec.HUMAN_GATE_POLICY
+                and gate["status"] != "fail"
+                and artifact is None):
+            # Proposals the Gate cannot put to a person — no `changes` list,
+            # duplicate ids, a missing or misstated hash — are a FAILED Gate
+            # with the reasons named (0.10.0), exactly as an artifact the
+            # Gate cannot state is: the step ran, but produced nothing a
+            # person can decide about. It used to raise out of the run.
+            try:
+                pending_changes(
+                    payload, sid,
+                    require_target=spec.profile == op_spec.PROFILE_0_2)
+            except op_spec.OpSpecError as exc:
+                gate = fields["gate"] = {
+                    "policy": op_spec.HUMAN_GATE_POLICY, "status": "fail",
+                    "decides": op_spec.DECIDES_CHANGES,
+                    "envelope_status": gate["status"],
+                    "reasons": list(exc.problems) + list(gate["reasons"]),
                     "decided_at": op_track.utc_now(), "guards": []}
         if (op_spec.gate_policy(step) == op_spec.HUMAN_GATE_POLICY
                 and gate["status"] != "fail"):
@@ -2804,15 +3100,16 @@ def _execute(spec, track, context, run_dir, package_root, authority, run_id,
     problematic = any(s["status"] in ("passed-with-problems", "skipped",
                                       "blocked", "denied")
                       for s in track["steps"])
+    if spec.outputs:
+        # Evaluated BEFORE the run is called complete: outputs that cannot be
+        # stated are a failed run, never a completed one with null outputs
+        # (0.10.0).
+        at.clear()
+        at["outputs"] = True
+        track["outputs"] = op_spec.evaluate(spec.outputs, context)
+        at.clear()
     track["status"] = "completed-with-problems" if problematic else "completed"
     track["ended_at"] = op_track.utc_now()
-    if spec.outputs:
-        try:
-            track["outputs"] = op_spec.evaluate(spec.outputs, context)
-        except op_spec.OpSpecError:
-            track["outputs"] = None      # the Track stays readable and final
-            op_track.save(track, run_dir)
-            raise
     track_path = op_track.save(track, run_dir)
     output = {"ok": True, "status": track["status"],
               "run_dir": str(run_dir), "track": track_path}
@@ -2870,6 +3167,7 @@ def run(package_root, request_path, dry_run=False, runs_dir=None,
         "steps": {},
         "run": {"dir": str(run_dir), "id": run_id},
         "request": {"dir": track['request_dir']},
+        op_spec.PROFILE_CONTEXT_KEY: spec.profile,
     }
     lock = RunLock(run_dir).acquire()
     try:
@@ -2936,14 +3234,16 @@ def _changed_cogs(spec, package_root, done):
     the run already paid for, and a resume exists to finish a run, not to
     start a new one. What the Track owes its reader is the fact — that the
     Cog at that source is no longer the one whose answer is in evidence."""
-    declared = {step["id"]: (step.get("cog") or {}) for step in spec.ordered}
+    steps = {step["id"]: step for step in spec.ordered}
+    declared = {sid: (step.get("cog") or {}) for sid, step in steps.items()}
     changed = []
     for sid, record in done.items():
         was = record.get("cog_sha256")
         source = declared.get(sid, {}).get("source")
         if not was or not source:
             continue
-        now = cog_package_sha256((Path(package_root) / source).resolve())
+        now = cog_package_sha256(op_spec.cog_source_dir(package_root,
+                                                        steps[sid]))
         if now != was:
             # The SPEC's declared id: it names the Cog at that source, which
             # is what changed, whatever the envelope of the run happened to
@@ -3121,6 +3421,7 @@ def _resume(package_root, run_dir, track_path, decision_path,
         # older Tracks fall back to where the copy lives.
         "request": {"dir": track.get("request_dir")
                     or str(Path(track["input_request"]).parent)},
+        op_spec.PROFILE_CONTEXT_KEY: spec.profile,
     }
     decisions = _restore_context(track, context)
 
@@ -3164,7 +3465,8 @@ def _resume(package_root, run_dir, track_path, decision_path,
                 f"run paused on; the artifact changed on disk since the "
                 f"Track recorded it, so no decision about it can be "
                 f"applied.")
-        value = apply_decision(pending, decision)
+        value = apply_decision(pending, decision,
+                               change_target_key=spec.change_target_key)
         decision_copy = run_dir / "decisions" / f"{sid}.json"
         op_track.write_json(decision_copy, decision, base=run_dir)
         digest = sha256_file(decision_copy)
