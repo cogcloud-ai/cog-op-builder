@@ -125,7 +125,11 @@ def ca_bundle_errors(workspace, suite=SUITE):
         locks = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z', '--cached', '--others', '--exclude-standard',
                                          '--', 'pixi.lock', '*/pixi.lock']).decode().split('\0')
         for rel in sorted(set(filter(None, locks))):
-            versions = {match.group(1) for match in CA_PACKAGE.finditer((root / rel).read_text())}
+            lock = root / rel
+            # scan() already reports a tracked lock that is missing or a dangling link.
+            if not lock.is_file():
+                continue
+            versions = {match.group(1) for match in CA_PACKAGE.finditer(lock.read_text(encoding='utf-8'))}
             for version in sorted(versions):
                 if tuple(map(int, version.split('.'))) < CA_MINIMUM:
                     errors.append(f'{name}/{rel}: ca-certificates {version} predates 2026.10.23 and still trusts the compromised eMudhra chain')

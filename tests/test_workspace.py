@@ -96,6 +96,12 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn('cog-op-builder/examples/demo/pixi.lock: ca-certificates 2026.7.22', errors[0])
 
+    def test_deleted_lock_is_reported_not_raised(self):
+        (self.component / 'pixi.lock').write_text('version: 6\n')
+        self.commit(self.component)
+        (self.component / 'pixi.lock').unlink()
+        self.assertEqual(checker.check(self.workspace, self.suite), ['cog-example/pixi.lock:0: missing-file: pixi.lock'])
+
     def test_missing_checkout(self):
         self.component.rename(self.workspace / 'elsewhere')
         self.assertTrue(any('missing Git checkout' in x for x in checker.check(self.workspace, self.suite)))
