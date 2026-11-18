@@ -19,9 +19,12 @@ MACHINE_PATH = re.compile(r'(?:/' r'Volumes/[^\s\"\'`<>]+|/(?:Users|home)/[^\s/\
 SIBLING = re.compile(r'(?:\.\./)+((?:cog-|op-)[A-Za-z0-9_-]+|planning|public|_xfer\w*|trial-workspaces)(?:/[^\s\"\'`<>),}]*)?')
 PRIVATE = re.compile(r'\b(?:cog-' r'demo|cog-' r'forge|cog-' r'issue-classifier|cog-' r'collab-qwen35b)\b')
 LINK = re.compile(r'!?\[[^\]\n]*\]\(<?([^\s)>]+)>?(?:\s+"[^"]*")?\)')
-# Older conda-forge bundles still trust the eMudhra chain whose intermediate keys were compromised (CVE-2026-111943).
+# CA bundles older than this still trust the eMudhra chain whose intermediate keys were compromised (CVE-2026-111943):
+# conda-forge ca-certificates, and certifi (used by requests and httpx) from conda-forge or PyPI. Both 2026.10.23
+# releases carry Mozilla's store as of that date.
 CA_MINIMUM = (2026, 10, 23)
-CA_PACKAGE = re.compile(r'/ca-certificates-(\d+(?:\.\d+)+)-[^/\s]+\.(?:conda|tar\.bz2)')
+# Conda archives (name-version-build.conda/.tar.bz2), PyPI wheels (name-version-tags.whl) and sdists (name-version.tar.gz).
+CA_PACKAGE = re.compile(r'/(ca-certificates|certifi)-(\d+(?:\.\d+)+)(?:-[^/\s]+)?\.(?:conda|tar\.bz2|whl|tar\.gz)')
 
 
 def git(root, *args):
@@ -129,10 +132,11 @@ def ca_bundle_errors(workspace, suite=SUITE):
             # scan() already reports a tracked lock that is missing or a dangling link.
             if not lock.is_file():
                 continue
-            versions = {match.group(1) for match in CA_PACKAGE.finditer(lock.read_text(encoding='utf-8'))}
-            for version in sorted(versions):
+            packages = {match.groups() for match in CA_PACKAGE.finditer(lock.read_text(encoding='utf-8'))}
+            for package, version in sorted(packages):
                 if tuple(map(int, version.split('.'))) < CA_MINIMUM:
-                    errors.append(f'{name}/{rel}: ca-certificates {version} predates 2026.10.23 and still trusts the compromised eMudhra chain')
+                    errors.append(f"{name}/{rel}: {package} {version} predates {'.'.join(map(str, CA_MINIMUM))} "
+                                  f"and still trusts the compromised eMudhra chain")
     return errors
 
 
