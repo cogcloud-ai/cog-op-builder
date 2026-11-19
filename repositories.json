@@ -6,7 +6,7 @@
       "url": "https://github.com/cogcloud-ai/cog-smith.git",
       "role": "core",
       "description": "Deterministic Cog/Op packaging, validation, and shared execution machinery, including the decision-Cog class.",
-      "revision": "2e93a52524f0f4fc7c50bf25398041c7d3bc5bba"
+      "revision": "6c2ea410b344d6e185b37a9391dc6f2674ab4609"
     },
     {
       "name": "cog-op-designer",
@@ -41,7 +41,7 @@
       "url": "https://github.com/cogcloud-ai/cog-verify-candidate.git",
       "role": "core",
       "description": "Run declared tests and cases; collect evidence without accepting a candidate.",
-      "revision": "f91f08c159b462d1f9d70cb19b2fa7faea4aea26"
+      "revision": "db17869b0c7146585c5e8506781d55fdaf1fac8c"
     },
     {
       "name": "op-cog-builder",
