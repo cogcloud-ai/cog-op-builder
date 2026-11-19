@@ -57,7 +57,14 @@ def contained(path, base):
         raise ValueError(f"{path} is a symlink; the runner writes its own "
                          f"records, never through a link")
     parent = Path(os.path.abspath(str(path.parent)))
-    resolved = parent.resolve()
+    try:
+        resolved = parent.resolve()
+    except RuntimeError as exc:
+        # A link loop (Python 3.12's resolve raises RuntimeError) is a link
+        # like any other: refused with the ValueError every caller handles.
+        raise ValueError(f"{path} passes through a symlink loop; the runner "
+                         f"writes its own records, never through a "
+                         f"link") from exc
     if resolved != base and base not in resolved.parents:
         raise ValueError(f"{path} resolves outside the run directory {base}; "
                          f"the runner's records stay inside the run")
@@ -205,6 +212,10 @@ def new_track(spec, run_id, input_request, status="running"):
         # The step a stopping verdict ended the run at — the resume point of
         # a failed run. `None` while the run is live.
         "failed_step": None,
+        # Why a run that could not evaluate a mapping stopped (0.10.0): a
+        # step's request, `foreach.items`, a grant requirement, or the
+        # `outputs`. `None` otherwise; a Gate's reasons stay on its step.
+        "reason": None,
         "steps": [],
     }
 

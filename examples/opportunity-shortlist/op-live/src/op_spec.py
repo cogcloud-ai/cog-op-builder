@@ -5,19 +5,37 @@ this file — `smith op check` enforces it by hash, exactly as `smith check`
 enforces Cog machinery. If an Op needs behaviour this module does not have,
 the answer is a Cog step, never a script in the Op.
 
-The spec is `openteams/op-manifest [0.1]`: identity, declared `inputs`, a
-list of Cog `steps` with mapping expressions for their requests, optional
-`outputs`, and the `track` records. The vocabulary is CLOSED — anything the
-runner subset does not carry is refused BY NAME at load, with the phase that
-adds it, so an author never discovers a missing construct mid-run.
+The spec is `openteams/op-manifest [0.2]` (the published execution profile)
+or `openteams/op-manifest [0.1]` (every Op written before it): identity,
+declared `inputs`, a list of Cog `steps` with mapping expressions for their
+requests, optional `outputs`, and the `track` records. The vocabulary is
+CLOSED — anything the runner subset does not carry is refused BY NAME at
+load, with the reason, so an author never discovers a missing construct
+mid-run.
+
+A `[0.2]` document is held to the profile's tightenings (machinery 0.11.0):
+`title` where `[0.1]` says `name`, typed identity fields, a stated
+`cog.version`, `targets` only, `read`/`write` actions only, operator objects
+with exactly their operator's keys, no `$path` beginning with `~`, every
+present key of the type the profile's schema gives it, no `foreach` artifact
+Gate that reads its loop variable, and cycle limits that read inputs only. At
+run time it also requires the named Cogs to be present at their stated
+versions and every envelope to name the step's Cog, and a proposed change
+names what it changes as `target`. A `[0.1]` document keeps the 0.10.0
+behaviour, except for the safety fixes both profiles share: a reserved
+`$run_dir` entry is refused in any case, and a path no filesystem can name
+fails the step.
 """
 from __future__ import annotations
 
 import hashlib
 import copy
+import errno
 import json
 import os
 import re
+import stat
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -29,7 +47,22 @@ try:                                                   # pragma: no cover
 except ImportError:                                    # pragma: no cover
     _SchemaValidator = None
 
-SCHEMA_STRING = "openteams/op-manifest [0.1]"
+SCHEMA_STRING_0_1 = "openteams/op-manifest [0.1]"
+SCHEMA_STRING_0_2 = "openteams/op-manifest [0.2]"
+#: Every Op manifest profile this machinery runs (0.11.0), oldest first.
+SCHEMA_STRINGS = (SCHEMA_STRING_0_1, SCHEMA_STRING_0_2)
+#: The `[0.1]` string, under the name every caller before 0.11.0 imported:
+#: those callers build `[0.1]` documents (with `name`), so this constant keeps
+#: meaning `[0.1]`. A new document declares `SCHEMA_STRING_0_2`.
+SCHEMA_STRING = SCHEMA_STRING_0_1
+PROFILE_0_1 = "0.1"
+PROFILE_0_2 = "0.2"
+#: Where a run context carries its document's profile. `$`-prefixed, so it
+#: can never be a mapping-path root an Op reads nor a `foreach` variable.
+PROFILE_CONTEXT_KEY = "$profile"
+#: The field of a proposed change that names what it changes — the target a
+#: write admission must list. `[0.1]` documents name it `repository`.
+CHANGE_TARGET_KEYS = {PROFILE_0_1: "repository", PROFILE_0_2: "target"}
 GATE_POLICY = "envelope-ok-no-error-problems"
 #: A human Gate is a POLICY on a step, never a step of its own: the step
 #: runs its Cog, the envelope goes through the ordinary policy, and only a
@@ -62,6 +95,10 @@ TOP_KEYS = {"schema", "id", "version", "name", "description", "inputs",
             "steps", "outputs", "track", "authority", "cycle"}
 STEP_KEYS = {"id", "name", "depends_on", "cog", "foreach", "input",
              "expected_outcome", "gate", "on_fail", "authority", "repeat"}
+#: `[0.2]` calls the Op's and each step's human-readable name `title`; `name`
+#: is refused by name there (and is the title of a `[0.1]` document).
+TOP_KEYS_0_2 = (TOP_KEYS - {"name"}) | {"title"}
+STEP_KEYS_0_2 = (STEP_KEYS - {"name"}) | {"title"}
 COG_KEYS = {"id", "version", "source", "task"}
 INPUT_KEYS = {"name", "description", "required", "default", "schema"}
 FOREACH_KEYS = {"items", "as"}
@@ -91,13 +128,17 @@ STEP_AUTHORITY_KEYS = {"requires"}
 #: read as an alias; a document that states both is refused (0.8.0).
 TARGET_KEYS = ("targets", "repositories")
 REQUIREMENT_KEYS = {"resource", "action", "changes", *TARGET_KEYS}
+#: `[0.2]` names targets `targets` only, and an action is a read or a write.
+REQUIREMENT_KEYS_0_2 = {"resource", "action", "changes", "targets"}
+ACTIONS_0_2 = ("read", "write")
 DEFAULT_TTL_MINUTES = 60
 
-# Refused by name, with the phase that adds the construct. A value of None
-# means the construct is never added: there is no tool: step kind —
+# Refused by name, with the reason it is refused. A value of None means a
+# step kind with its own reason below: there is no tool: step kind —
 # deterministic work is a Cog of kind: code, invoked as a cog: step — and no
 # human: step kind either: a human Gate is `gate: {policy: human}` on a step.
-REFUSED_TOP = {"state": "phase 4"}
+REFUSED_TOP = {"state": "durable state across runs is not part of this Op "
+                         "spec; a run reads only its request and its own steps"}
 REFUSED_STEP = {"tool": None, "human": None}
 REFUSED_STEP_REASON = {
     "tool": ("there is no tool: step kind — deterministic work is a Cog of "
@@ -139,9 +180,17 @@ REFUSED_PATH_ROOTS = {
 #: The run directory's CONTROL entries: the runner owns them, and no mapping
 #: expression may name one. `$run_dir` makes a place for a Cog's OUTPUT; a
 #: Cog handed `runs/<id>/grants` as an output directory could overwrite the
-#: very documents that authorize it.
+#: very documents that authorize it. Since 0.10.0 the list is the run
+#: directory's whole layout: the step requests a later step's request is
+#: built beside, the envelopes that are the run's evidence, and the copy of
+#: the input request a resume reads back are the runner's too.
 RESERVED_RUN_SUBPATHS = ("grants", "pending", "decisions", "journal",
-                         "run.lock", "track.json")
+                         "run.lock", "track.json", "requests", "envelopes",
+                         "input-request.json")
+#: The reserved FILES, whose atomic rewrites go through a temporary sibling
+#: named `<file>.<pid>.tmp`: a directory in that place would make the next
+#: rewrite of the Track fail, so `<file>.` names the file too.
+RESERVED_RUN_FILES = ("run.lock", "track.json", "input-request.json")
 
 # A Cog's conventional lifecycle tasks, for steps whose interface declares no
 # audience. Kept here (not imported from cog-smith) because this module is
@@ -155,6 +204,29 @@ class OpSpecError(Exception):
     def __init__(self, problems):
         self.problems = [problems] if isinstance(problems, str) else list(problems)
         super().__init__("\n".join(self.problems))
+
+
+def profile_of(doc):
+    """The profile a document declares: `0.2` for `openteams/op-manifest
+    [0.2]`, and `0.1` for anything else — a `[0.1]` document, and a document
+    whose schema is refused anyway, which is read with the `[0.1]` key sets
+    so its other findings stay the ones 0.10.0 reported."""
+    if isinstance(doc, dict) and doc.get("schema") == SCHEMA_STRING_0_2:
+        return PROFILE_0_2
+    return PROFILE_0_1
+
+
+def step_title(step):
+    """A step's human-readable name: `title` in `[0.2]`, `name` in `[0.1]`."""
+    if not isinstance(step, dict):
+        return None
+    return step.get("title", step.get("name"))
+
+
+def change_target_key(profile):
+    """The field a proposed change names what it changes under: `target` in
+    `[0.2]`, `repository` in `[0.1]`."""
+    return CHANGE_TARGET_KEYS.get(profile, CHANGE_TARGET_KEYS[PROFILE_0_1])
 
 
 # ---------------------------------------------------------------- lookup --
@@ -226,14 +298,66 @@ def normalized_subpath(subpath):
     return os.path.normpath(str(subpath or "."))
 
 
+def caseless(name):
+    """NAME as a reserved entry is compared (0.11.0): Unicode canonical
+    caseless matching (D145) — NFD, full case folding, NFD again.
+
+    A filesystem that folds case (APFS and NTFS by default) opens the
+    runner's `requests` for a step handed `Requests`, so a case-sensitive
+    comparison let `$run_dir: Requests` — or `GRANTS`, or `Track.json.1.tmp`
+    — give a Cog the very control entries the rule reserves. Folding here
+    makes the verdict the same on every filesystem, whether or not it folds:
+    the reserved names are lowercase ASCII, so each is its own caseless form,
+    and a spelling such as `trac\u212a.json` (a Kelvin sign, which folds to
+    `k`) is caught too."""
+    return unicodedata.normalize(
+        "NFD", unicodedata.normalize("NFD", str(name)).casefold())
+
+
 def reserved_run_subpath(subpath):
     """The control entry SUBPATH names or lives under, or None. The subpath
-    is NORMALISED first, so no spelling of a reserved name gets through."""
+    is NORMALISED first, and its first component compared CASELESSLY
+    (`caseless`, 0.11.0), so no spelling of a reserved name gets through —
+    and everything under one is reserved with it."""
     normalized = normalized_subpath(subpath)
     parts = [p for p in Path(normalized).parts if p not in (".", "/")]
-    if parts and parts[0] in RESERVED_RUN_SUBPATHS:
-        return parts[0]
+    if not parts:
+        return None
+    first = caseless(parts[0])
+    if first in RESERVED_RUN_SUBPATHS:
+        return first
+    for name in RESERVED_RUN_FILES:
+        if first.startswith(name + "."):
+            return name
     return None
+
+
+def reserved_identities(run_dir):
+    """{(st_dev, st_ino): name} for the run directory and each control entry
+    present in it (0.11.0). What `run_dir_path` compares an existing
+    component with: a filesystem may alias an entry under a spelling no
+    rule lists — Unicode compatibility folding (ZFS `normalization=formKC`),
+    a hard link to a control file — and the IDENTITY of the entry is what a
+    Cog would be handed. The run directory itself is listed because a
+    directory that is the run root holds every entry."""
+    found = {}
+    for name in (".",) + RESERVED_RUN_SUBPATHS:
+        try:
+            info = os.lstat(Path(run_dir) / name)
+        except OSError:
+            continue                     # not created yet: the name rule holds
+        found[(info.st_dev, info.st_ino)] = name
+    return found
+
+
+def names_run_root(subpath):
+    """True when SUBPATH, normalised, names the run directory ITSELF — `""`,
+    `"."`, `"out/.."` (machinery 0.10.0). The run root holds every control
+    entry, so handing it to a Cog as an output directory hands it all of
+    them."""
+    parts = [p for p in Path(normalized_subpath(subpath)).parts
+             if p not in (".", "/")]
+    return not parts
 
 
 def run_dir_path(subpath, run_dir):
@@ -242,11 +366,18 @@ def run_dir_path(subpath, run_dir):
     `$run_dir` makes a directory INSIDE this run, so an absolute operand, a
     `..` escape, and a symlink out of the run are all refused BEFORE
     anything is created."""
-    if subpath is None:
-        subpath = ""
     if not isinstance(subpath, str):
         raise OpSpecError(f"$run_dir takes a relative subpath string, got "
                           f"{subpath!r}.")
+    if Path(subpath).is_absolute():
+        raise OpSpecError(f"$run_dir subpath {subpath!r} is absolute; "
+                          f"$run_dir names a directory inside this run.")
+    if names_run_root(subpath):
+        # Machinery 0.10.0: an empty, `.` or null operand used to hand the
+        # Cog the run root itself, and every control entry with it.
+        raise OpSpecError(f"$run_dir subpath {subpath!r} names the run "
+                          f"directory itself, which the runner owns; "
+                          f"$run_dir names a directory inside this run.")
     reserved = reserved_run_subpath(subpath)
     if reserved:
         raise OpSpecError(f"$run_dir subpath {subpath!r} names the run's "
@@ -254,27 +385,112 @@ def run_dir_path(subpath, run_dir):
                           f"{list(RESERVED_RUN_SUBPATHS)} are reserved.")
     candidate = Path(normalized_subpath(subpath))
     base = Path(run_dir).resolve()
-    if Path(subpath).is_absolute():
-        raise OpSpecError(f"$run_dir subpath {subpath!r} is absolute; "
-                          f"$run_dir names a directory inside this run.")
-    target = (base / candidate).resolve()
+    try:
+        target = (base / candidate).resolve()
+    except (ValueError, OSError, RuntimeError) as exc:
+        # An operand no filesystem can name — an embedded NUL (ValueError),
+        # or a link loop, which Python 3.12's resolve raises as RuntimeError
+        # (3.13 returns the path, and the walk below refuses the link) — is
+        # the operand's fault and recurs on every resume: an evaluation
+        # failure (0.11.0), exactly as for `$path`, never an exception that
+        # leaves the run and the step `running`.
+        raise OpSpecError(invalid_path_problem(
+            "$run_dir", subpath, subpath, exc)) from exc
     if target != base and base not in target.parents:
         raise OpSpecError(f"$run_dir subpath {subpath!r} resolves outside the "
                           f"run directory; $run_dir names a directory inside "
                           f"this run.")
     # No component may be a link, even one pointing back inside the run: an
     # alias is how a step would be handed the runner's own control entries
-    # under another name.
+    # under another name. Nor may an existing component BE one of them, or
+    # the run root, under a name the caseless rule does not list (0.11.0):
+    # with links refused, only the filesystem itself can alias an entry
+    # (`reserved_identities`), and comparing what each component IS closes
+    # that whatever the filesystem folds.
+    identities = reserved_identities(base)
     current = base
     for part in candidate.parts:
         current = current / part
-        if current.is_symlink():
+        try:
+            info = os.lstat(current)
+        except (FileNotFoundError, NotADirectoryError):
+            break                        # nothing exists below here
+        except OSError as exc:
+            # A component too long to name raised out of the walk before
+            # `mkdir` could classify it: the same rule as there applies.
+            if exc.errno not in INVALID_NAME_ERRNOS:
+                raise
+            raise OpSpecError(invalid_path_problem(
+                "$run_dir", subpath, subpath, exc)) from exc
+        if stat.S_ISLNK(info.st_mode):
             raise OpSpecError(
                 f"$run_dir subpath {subpath!r} passes through {part!r}, "
                 f"which is a symlink; $run_dir names a real directory "
                 f"inside this run.")
-    target.mkdir(parents=True, exist_ok=True)
+        alias = identities.get((info.st_dev, info.st_ino))
+        if alias == ".":
+            raise OpSpecError(
+                f"$run_dir subpath {subpath!r} reaches the run directory "
+                f"itself under another name, and the runner owns it; "
+                f"$run_dir names a directory inside this run.")
+        if alias:
+            raise OpSpecError(
+                f"$run_dir subpath {subpath!r} reaches the run's {alias!r} "
+                f"under another name, and the runner owns it; "
+                f"{list(RESERVED_RUN_SUBPATHS)} are reserved.")
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        # A name the filesystem refuses (too long, not representable) is the
+        # operand's fault and an evaluation failure (0.11.0). So is a path
+        # the run already holds as something other than a directory — an
+        # earlier step's FILE at `work`, for `work` or `work/sub` — which
+        # would refuse every resume the same way. Anything else — a full
+        # disk, a permission the machine took away — is the machine's, an
+        # interruption like a crash: raised, and the `running` Track a
+        # resume picks up stays true.
+        if exc.errno in NOT_A_DIRECTORY_ERRNOS:
+            raise OpSpecError(
+                f"$run_dir subpath {subpath!r} names a path this run already "
+                f"holds as something other than a directory; $run_dir names "
+                f"a directory inside this run.") from exc
+        if exc.errno not in INVALID_NAME_ERRNOS:
+            raise
+        raise OpSpecError(invalid_path_problem(
+            "$run_dir", subpath, subpath, exc)) from exc
     return str(target)
+
+
+#: The errors that say a NAME is impossible rather than that the machine
+#: failed (0.11.0): the operand of `$run_dir` is at fault, not the run.
+INVALID_NAME_ERRNOS = frozenset(
+    code for code in (getattr(errno, name, None)
+                      for name in ("ENAMETOOLONG", "EINVAL", "EILSEQ"))
+    if code is not None)
+
+
+#: The errors `mkdir` gives when a component already exists and is not a
+#: directory (0.11.0): the run's own contents refuse the operand.
+NOT_A_DIRECTORY_ERRNOS = frozenset({errno.EEXIST, errno.ENOTDIR})
+
+
+def invalid_path_problem(operator, operand, value, exc):
+    """The reason an operator's value names no path, in a full sentence."""
+    return (f"{operator} of {operand!r} evaluates to {value!r}, which is not "
+            f"a path this machine can name ({type(exc).__name__}: {exc}).")
+
+
+def step_input(step, context):
+    """The mapping expression a step's request is evaluated from.
+
+    `[0.2]` reads `input` as written whenever it is present: `false`, `0`,
+    `""`, `null`, and `[]` are requests a Cog may be sent, exactly as their
+    `$literal` forms are, and only an omitted `input` means `{}` (0.11.0).
+    `[0.1]` keeps the 0.10.0 reading, where any falsy `input` became `{}`."""
+    if isinstance(context, dict) and \
+            context.get(PROFILE_CONTEXT_KEY) == PROFILE_0_2:
+        return step.get("input", {})
+    return step.get("input") or {}
 
 
 def evaluate(expr, ctx):
@@ -300,10 +516,31 @@ def evaluate(expr, ctx):
                 value = evaluate(expr["$path"], ctx)
                 if value is None:
                     return None
-                path = Path(str(value)).expanduser()
-                if not path.is_absolute():
-                    path = Path(ctx["request"]["dir"]) / path
-                return str(path.resolve())
+                if (ctx.get(PROFILE_CONTEXT_KEY) == PROFILE_0_2
+                        and str(value).startswith("~")):
+                    # [0.2] (0.11.0): a computed `~` path is refused here,
+                    # as a literal one is at load. [0.1] expands it.
+                    raise OpSpecError(
+                        f"$path of {expr['$path']!r} evaluates to "
+                        f"{value!r}, which begins with ~; an Op's paths "
+                        f"never depend on whose machine runs it (rule "
+                        f"path-no-home).")
+                try:
+                    path = Path(str(value)).expanduser()
+                    if not path.is_absolute():
+                        path = Path(ctx["request"]["dir"]) / path
+                    return str(path.resolve())
+                except (ValueError, OSError, RuntimeError) as exc:
+                    # A value no filesystem can name — an embedded NUL, a
+                    # `~user` with no home (RuntimeError), a name too long
+                    # or a link loop (OSError) — is the VALUE's fault and
+                    # recurs on every resume: an evaluation failure, which
+                    # fails the step with the reason (0.11.0), never an
+                    # exception that leaves the Track `running`. A resolve
+                    # that is not `strict` tolerates a missing or unreadable
+                    # file, so what reaches here is about the value.
+                    raise OpSpecError(invalid_path_problem(
+                        "$path", expr["$path"], value, exc)) from exc
             if "$run_dir" in keys:
                 value = evaluate(expr["$run_dir"], ctx)
                 return run_dir_path(value, ctx["run"]["dir"])
@@ -363,10 +600,50 @@ def reads_steps(expr):
     return bool(found)
 
 
+def expression_reads(expr):
+    """Every read EXPR makes, in document order (0.11.0): `("$from", PATH)`
+    for each `$from` — one nested in a `$default` or another operator's
+    operand included — and `("$run_dir", OPERAND)` and `("$path", OPERAND)`
+    for the operators that read the run's or the request's directory. A
+    `$literal` is data and reads nothing."""
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            keys = operator_keys(node)
+            if keys is not None and "$literal" in keys:
+                return
+            if keys is not None and "$from" in keys:
+                found.append(("$from", node["$from"]))
+            elif keys is not None:
+                found.extend((key, node[key]) for key in ("$run_dir", "$path")
+                             if key in keys)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(expr)
+    return found
+
+
+def path_root(path):
+    """The root segment of a mapping PATH, or None when it is not a string."""
+    return path.split(".")[0] if isinstance(path, str) else None
+
+
 # ------------------------------------------------------------ validation --
 
 def _expr_problems(expr, where, input_names, step_ids, dep_ids, loop_vars,
-                   problems, human_steps=()):
+                   problems, human_steps=(), strict=False):
+    """Every problem with one mapping expression. STRICT is a `[0.2]`
+    document (0.11.0): an object holding an operator key has exactly that
+    operator's key set, and a literal `$path` never begins with `~`."""
+    def walk(node, at):
+        _expr_problems(node, at, input_names, step_ids, dep_ids, loop_vars,
+                       problems, human_steps, strict)
+
     if isinstance(expr, dict):
         keys = frozenset(expr)
         if keys in OPERATORS:
@@ -376,31 +653,21 @@ def _expr_problems(expr, where, input_names, step_ids, dep_ids, loop_vars,
                 _path_problems(expr["$from"], where, input_names, step_ids,
                                dep_ids, loop_vars, problems, human_steps)
                 if "$default" in keys:
-                    _expr_problems(expr["$default"], where, input_names,
-                                   step_ids, dep_ids, loop_vars, problems,
-                                   human_steps)
+                    walk(expr["$default"], where)
                 return
-            if "$run_dir" in keys and isinstance(expr["$run_dir"], str):
-                subpath = expr["$run_dir"]
-                if (Path(subpath).is_absolute()
-                        or ".." in Path(subpath).parts):
-                    problems.append(
-                        f"{where} asks $run_dir for {subpath!r}; $run_dir "
-                        f"names a directory inside this run, so the subpath "
-                        f"is relative and never leaves the run directory.")
+            if "$run_dir" in keys:
+                problem = _literal_run_dir_problem(expr["$run_dir"], where)
+                if problem:
+                    problems.append(problem)
                     return
-                reserved = reserved_run_subpath(subpath)
-                if reserved:
-                    problems.append(
-                        f"{where} asks $run_dir for {subpath!r}, which names "
-                        f"the run's {reserved!r}; "
-                        f"{list(RESERVED_RUN_SUBPATHS)} are the runner's own "
-                        f"control entries and no step writes into them.")
+            if "$path" in keys and strict:
+                problem = _literal_path_problem(expr["$path"], where)
+                if problem:
+                    problems.append(problem)
                     return
             for key in ("$path", "$run_dir", "$stem", "$sha256"):
                 if key in keys:
-                    _expr_problems(expr[key], where, input_names, step_ids,
-                                   dep_ids, loop_vars, problems, human_steps)
+                    walk(expr[key], where)
             return
         unknown = unknown_dollar_keys(expr)
         if unknown:
@@ -408,18 +675,77 @@ def _expr_problems(expr, where, input_names, step_ids, dep_ids, loop_vars,
                 f"{where} uses unknown mapping operator(s) {unknown}; the "
                 f"mapping vocabulary is closed ({OPERATOR_NAMES}).")
             return
+        if strict and dollar_keys(expr):
+            # [0.2]: `{$from: x, label: y}` and a `$default` without `$from`
+            # were ordinary data in [0.1], so a misspelled sibling silently
+            # changed what the step was sent.
+            operators = dollar_keys(expr)
+            others = sorted(str(k) for k in expr if k not in operators)
+            held = (f"operator key(s) {operators} beside {others}" if others
+                    else f"operator keys {operators}, which are no "
+                         f"operator's key set")
+            problems.append(
+                f"{where} holds {held}; an object holding an operator key "
+                f"has exactly that operator's keys ({OPERATOR_NAMES}), and "
+                f"data that needs $-prefixed keys is written with $literal "
+                f"(rule operator-exact-keyset).")
+            return
         for key, value in expr.items():
             if not isinstance(key, str):
                 problems.append(f"{where} has key {key!r}, which is not a "
                                 f"string; a request document's keys are "
                                 f"strings.")
                 continue
-            _expr_problems(value, f"{where}.{key}", input_names, step_ids,
-                           dep_ids, loop_vars, problems, human_steps)
+            walk(value, f"{where}.{key}")
     elif isinstance(expr, list):
         for index, item in enumerate(expr):
-            _expr_problems(item, f"{where}[{index}]", input_names, step_ids,
-                           dep_ids, loop_vars, problems, human_steps)
+            walk(item, f"{where}[{index}]")
+
+
+def _literal_path_problem(operand, where):
+    """Why a `$path` operand is refused AT LOAD in a `[0.2]` document, or
+    None: a literal (a string, or a `$literal` of one) that begins with `~`.
+    A computed operand is checked when it is evaluated."""
+    if isinstance(operand, dict) and frozenset(operand) == frozenset({"$literal"}):
+        operand = operand["$literal"]
+    if isinstance(operand, str) and operand.startswith("~"):
+        return (f"{where} asks $path for {operand!r}, which begins with ~; an "
+                f"Op's paths never depend on whose machine runs it (rule "
+                f"path-no-home).")
+    return None
+
+
+def _literal_run_dir_problem(operand, where):
+    """Why a `$run_dir` operand is refused AT LOAD, or None. Only what the
+    operand's text already settles is checked here — a string, or a
+    `$literal` of one; an expression operand is checked when it is evaluated
+    (`run_dir_path`). An operand that can never evaluate to a string (null,
+    a number, a list, a plain object) is refused here too (0.10.0)."""
+    if isinstance(operand, dict) and frozenset(operand) == frozenset({"$literal"}):
+        operand = operand["$literal"]
+    elif isinstance(operand, dict) and frozenset(operand) in OPERATORS:
+        return None                      # evaluated, then checked
+    if isinstance(operand, dict) and unknown_dollar_keys(operand):
+        return None                      # refused by name by the walk
+    if not isinstance(operand, str):
+        return (f"{where} asks $run_dir for {operand!r}; $run_dir takes a "
+                f"relative subpath string naming a directory inside this "
+                f"run.")
+    if Path(operand).is_absolute() or ".." in Path(operand).parts:
+        return (f"{where} asks $run_dir for {operand!r}; $run_dir names a "
+                f"directory inside this run, so the subpath is relative and "
+                f"never leaves the run directory.")
+    if names_run_root(operand):
+        return (f"{where} asks $run_dir for {operand!r}, which names the run "
+                f"directory itself; $run_dir names a directory inside this "
+                f"run, never the run root that holds the runner's own control "
+                f"entries.")
+    reserved = reserved_run_subpath(operand)
+    if reserved:
+        return (f"{where} asks $run_dir for {operand!r}, which names the "
+                f"run's {reserved!r}; {list(RESERVED_RUN_SUBPATHS)} are the "
+                f"runner's own control entries and no step writes into them.")
+    return None
 
 
 def _path_problems(path, where, input_names, step_ids, dep_ids, loop_vars,
@@ -503,17 +829,26 @@ def gate_artifact(step):
     return (step.get("gate") or {}).get("artifact")
 
 
-def _gate_problems(step, sid, problems):
+def _typed(message, strict, rule="present-key-typed"):
+    """MESSAGE, naming the profile's RULE when STRICT (a `[0.2]` document,
+    0.11.0): a present key of the wrong type is refused there by rule, as
+    the profile's other tightenings are. `[0.1]` messages are unchanged."""
+    return message[:-1] + f" (rule {rule})." if strict else message
+
+
+def _gate_problems(step, sid, problems, strict=False):
     """Every problem with one step's `gate:` block. `decides` and
     `artifact` belong to a human Gate (0.7.0): an artifact Gate DECLARES the
     artifact it asks about, as a closed mapping over `kind`, `digests`, and
-    the optional `id`, `summary` and `detail`; a changes Gate declares none."""
+    the optional `id`, `summary` and `detail`; a changes Gate declares none.
+    STRICT is a `[0.2]` document (0.11.0): a `gate:` that is present is an
+    object, and `guards`, when present, a list (accepted only empty)."""
     gate = step.get("gate")
-    if gate is None:
+    if gate is None and not (strict and "gate" in step):
         return
     if not isinstance(gate, dict):
-        problems.append(f"Op step {sid!r}'s gate must be an object "
-                        f"with a policy.")
+        problems.append(_typed(f"Op step {sid!r}'s gate must be an object "
+                               f"with a policy.", strict))
         return
     for key in sorted(str(k) for k in set(gate) - GATE_KEYS):
         problems.append(f"unknown key {key!r} under Op step "
@@ -524,7 +859,12 @@ def _gate_problems(step, sid, problems):
         problems.append(f"Op step {sid!r} declares gate.policy "
                         f"{policy!r}; the Gate policies are "
                         f"{list(GATE_POLICIES)}.")
-    if gate.get("guards"):
+    if strict and "guards" in gate and not isinstance(gate["guards"], list):
+        # [0.1] read a falsy `guards` (false, null, {}) as none at all.
+        problems.append(f"Op step {sid!r} declares gate.guards "
+                        f"{gate['guards']!r}; gate.guards is deprecated and "
+                        f"accepted only as an empty list (rule no-guards).")
+    elif gate.get("guards"):
         problems.append(f"Op step {sid!r} declares gate.guards, "
                         f"which are not in the runner subset; "
                         f"Guards are system-side verifiers a "
@@ -605,19 +945,21 @@ def repeat_spec(step):
     return {"count": count, "require": require, "mode": mode}
 
 
-def _repeat_problems(step, sid, problems):
+def _repeat_problems(step, sid, problems, strict=False):
     """Every problem with one step's `repeat:` block.
 
     Repetition is for steps that only READ and only propose: a step that
     carries `authority`, or whose Gate is a human one, is refused here, and a
     step whose COG declares `reaches` is refused by `cog_step_findings`,
-    where the manifest is readable."""
+    where the manifest is readable. STRICT is a `[0.2]` document (0.11.0):
+    `repeat: null` is a malformed declaration, not a step that runs once."""
     declared = step.get("repeat")
-    if declared is None:
+    if declared is None and not (strict and "repeat" in step):
         return
     if not isinstance(declared, dict):
-        problems.append(f"Op step {sid!r} declares repeat {declared!r}; a "
-                        f"repeat is an object with count and require.")
+        problems.append(_typed(f"Op step {sid!r} declares repeat "
+                               f"{declared!r}; a repeat is an object with "
+                               f"count and require.", strict))
         return
     for key in sorted(str(k) for k in set(declared) - REPEAT_KEYS):
         problems.append(f"unknown key {key!r} under Op step {sid!r}'s "
@@ -711,18 +1053,21 @@ def decision_step(requirement):
 
 
 def _authority_problems(step, sid, step_ids, human_steps, problems,
-                        artifact_steps=()):
+                        artifact_steps=(), strict=False):
     """Every problem with one step's `authority:` block.
 
     `artifact_steps` are the human Gates that decide about an ARTIFACT
     (0.7.0): their decision is one verdict, not an approved list, so no
-    write grant can be asked for from one."""
+    write grant can be asked for from one. STRICT is a `[0.2]` document
+    (0.11.0): `repositories` is refused, and an action is `read` or
+    `write`."""
     authority = step.get("authority")
-    if authority is None:
+    if authority is None and not (strict and "authority" in step):
+        # [0.2] (0.11.0): `authority: null` is present, and refused below.
         return
     if not isinstance(authority, dict):
-        problems.append(f"Op step {sid!r}'s authority must be an object with "
-                        f"a requires list.")
+        problems.append(_typed(f"Op step {sid!r}'s authority must be an "
+                               f"object with a requires list.", strict))
         return
     for key in sorted(str(k) for k in set(authority) - STEP_AUTHORITY_KEYS):
         problems.append(f"unknown key {key!r} under Op step {sid!r}'s "
@@ -745,7 +1090,9 @@ def _authority_problems(step, sid, step_ids, human_steps, problems,
             f"Op step {sid!r} declares authority and on_fail: retry-once; a "
             f"step that reaches outside the run is never re-invoked on a "
             f"failure — it recovers by resume and journal reconciliation.")
-    direct = set(_deps(step))
+    # Only the string entries: a list or object among them is refused by
+    # `validate`, and is not hashable.
+    direct = {dep for dep in _deps(step) if isinstance(dep, str)}
     gates = set()
     for index, requirement in enumerate(declared):
         where = f"Op step {sid!r} authority.requires[{index}]"
@@ -753,7 +1100,13 @@ def _authority_problems(step, sid, step_ids, human_steps, problems,
             problems.append(f"{where} must be an object with resource and "
                             f"action.")
             continue
-        for key in sorted(str(k) for k in set(requirement) - REQUIREMENT_KEYS):
+        if strict and "repositories" in requirement:
+            problems.append(f"{where} declares repositories, the former name "
+                            f"of targets; a requirement names what it "
+                            f"touches as targets (rule targets-only).")
+        known = REQUIREMENT_KEYS_0_2 if strict else REQUIREMENT_KEYS
+        for key in sorted(str(k) for k in set(requirement) - known
+                          - ({"repositories"} if strict else set())):
             problems.append(f"unknown key {key!r} on {where}; the "
                             f"requirement vocabulary is closed.")
         for field in ("resource", "action"):
@@ -762,6 +1115,14 @@ def _authority_problems(step, sid, step_ids, human_steps, problems,
                 problems.append(f"{where} declares {field} "
                                 f"{requirement.get(field)!r}; a requirement's "
                                 f"{field} is a string.")
+        if (strict and isinstance(requirement.get("action"), str)
+                and requirement["action"]
+                and requirement["action"] not in ACTIONS_0_2):
+            problems.append(f"{where} declares action "
+                            f"{requirement['action']!r}; an action is read or "
+                            f"write, and other effects are not in this Op "
+                            f"spec (rule read-or-write).")
+            continue
         # Whatever the action: a write's lists are not what the grant is
         # issued from, so a conflict there would otherwise pass unread.
         both = all(key in requirement for key in TARGET_KEYS)
@@ -887,32 +1248,158 @@ def schema_problems(schema, name):
     return []
 
 
+def _strict_problems(doc):
+    """The top-level tightenings a `[0.2]` document is held to (machinery
+    0.11.0; profile `op-manifest [0.2]`, "Tightenings"): typed identity,
+    description, `inputs[].required` and `track.records`."""
+    problems = []
+    for field in ("id", "version", "title"):
+        if field not in doc or doc[field] in ("", None):
+            problems.append(f"the Op spec is missing required field "
+                            f"{field!r}.")
+        elif not isinstance(doc[field], str):
+            problems.append(f"the Op spec declares {field} {doc[field]!r}, "
+                            f"which is not a string; quote it (rule "
+                            f"required-identity).")
+    if "description" in doc and not isinstance(doc["description"], str):
+        problems.append(f"the Op spec declares description "
+                        f"{doc['description']!r}, which is not a string.")
+    inputs = doc.get("inputs")
+    for declared in inputs if isinstance(inputs, list) else []:
+        if not isinstance(declared, dict):
+            continue
+        name = declared.get("name")
+        if "required" in declared and not isinstance(declared["required"],
+                                                     bool):
+            problems.append(f"Op input {name!r} declares required "
+                            f"{declared['required']!r}; required is true or "
+                            f"false.")
+        if "description" in declared and not isinstance(
+                declared["description"], str):
+            problems.append(f"Op input {name!r} declares description "
+                            f"{declared['description']!r}, which is not a "
+                            f"string.")
+    track = doc.get("track")
+    if isinstance(track, dict) and "records" in track:
+        records = track["records"]
+        if not isinstance(records, list) or any(not isinstance(r, str)
+                                                for r in records):
+            problems.append(f"the Op spec declares track.records "
+                            f"{records!r}; track.records is a list of "
+                            f"strings (and is ignored).")
+    return problems
+
+
+def _artifact_loop_problems(step, sid, loop_vars):
+    """Why a `foreach` step's artifact Gate is refused for reading its loop
+    variable (`[0.2]`, 0.11.0; rule artifact-not-per-element). Each element
+    has its own envelope Gate, but a human artifact Gate is ONE decision over
+    the whole step, evaluated after the loop, when no element is current: a
+    digest of `item.x` has nothing to read, so the Gate could only fail.
+    `[0.1]` keeps loading it — a read with a `$default` evaluates there."""
+    return [f"Op step {sid!r} gate.artifact reads {path!r}, the foreach "
+            f"variable; a human artifact Gate on a foreach step is one "
+            f"decision over the whole step, made after the loop, when no "
+            f"element is current. Read the step's payload, the list of "
+            f"element payloads, instead (rule artifact-not-per-element)."
+            for kind, path in expression_reads(gate_artifact(step))
+            if kind == "$from" and path_root(path) in loop_vars]
+
+
+def _cycle_limit_problems(expr, where):
+    """Why a cycle limit is refused for reading something other than an
+    input (`[0.2]`, 0.11.0; rule cycle-limits-read-inputs). The limits are
+    evaluated once, when the cycle starts and before any run exists, from
+    the request's inputs alone: `run.*`, `request.dir`, `$run_dir` and
+    `$path` would read a run or a request directory — nested in a `$default`
+    as much as at the top. A step or an undeclared root is refused by
+    `_expr_problems` already."""
+    problems = []
+    for kind, value in expression_reads(expr):
+        if kind == "$from" and path_root(value) in ("run", "request"):
+            problems.append(f"{where} reads {value!r}; a cycle's limits read "
+                            f"inputs only, evaluated once when the cycle "
+                            f"starts, before any run exists (rule "
+                            f"cycle-limits-read-inputs).")
+        elif kind in ("$run_dir", "$path"):
+            problems.append(f"{where} uses {kind}, which reads a run or "
+                            f"request directory; a cycle's limits read "
+                            f"inputs only, evaluated once when the cycle "
+                            f"starts (rule cycle-limits-read-inputs).")
+    return problems
+
+
+def _strict_step_problems(step, sid):
+    """The step tightenings a `[0.2]` document is held to (0.11.0): `title`,
+    never `name`; typed `title` and `expected_outcome`; a stated
+    `cog.version`."""
+    problems = []
+    if "name" in step:
+        problems.append(f"Op step {sid!r} declares name:; a step's "
+                        f"human-readable name is title, as the Op's is (rule "
+                        f"step-title).")
+    for field in ("title", "expected_outcome"):
+        if field in step and not isinstance(step[field], str):
+            problems.append(f"Op step {sid!r} declares {field} "
+                            f"{step[field]!r}, which is not a string"
+                            + (" (rule step-title)." if field == "title"
+                               else "."))
+    cog = step.get("cog")
+    if isinstance(cog, dict) and cog.get("version") in (None, ""):
+        problems.append(f"Op step {sid!r} is missing cog.version; a step "
+                        f"states the version of the Cog it was written "
+                        f"against, and the run checks it (rule "
+                        f"cog-version-required).")
+    return problems
+
+
 def validate(doc):
-    """Every problem with a spec document, as one-sentence strings."""
+    """Every problem with a spec document, as one-sentence strings.
+
+    The document's `schema` picks the rules: a `[0.2]` document is held to
+    the profile's tightenings (`_strict_problems` and the STRICT branches
+    below, machinery 0.11.0); a `[0.1]` document is validated exactly as
+    0.10.0 validated it."""
     problems = []
     if not isinstance(doc, dict):
         raise OpSpecError("an Op spec is a mapping with schema, id, version, "
                           "and steps.")
+    strict = profile_of(doc) == PROFILE_0_2
+    top_keys = TOP_KEYS_0_2 if strict else TOP_KEYS
+    step_keys = STEP_KEYS_0_2 if strict else STEP_KEYS
 
     for key, phase in REFUSED_TOP.items():
         if key in doc:
             problems.append(f"the Op spec declares {key}:, which the runner "
-                            f"subset does not carry — {phase} adds it.")
-    for key in sorted(str(k) for k in set(doc) - TOP_KEYS - set(REFUSED_TOP)):
+                            f"subset does not carry — {phase}.")
+    if strict and "name" in doc:
+        problems.append("the Op spec declares name:; the Op's human-readable "
+                        "name is title (rule required-identity).")
+    for key in sorted(str(k) for k in set(doc) - top_keys - set(REFUSED_TOP)
+                      - ({"name"} if strict else set())):
         problems.append(f"unknown top-level Op spec key {key!r}; the Op spec "
                         f"vocabulary is closed.")
-    if doc.get("schema") != SCHEMA_STRING:
-        problems.append(f"the Op spec schema must be {SCHEMA_STRING!r}, got "
-                        f"{doc.get('schema')!r}.")
-    for field in ("id", "version", "name"):
-        if not doc.get(field):
-            problems.append(f"the Op spec is missing required field {field!r}.")
+    if doc.get("schema") not in SCHEMA_STRINGS:
+        problems.append(f"the Op spec schema must be one of "
+                        f"{list(SCHEMA_STRINGS)}, got {doc.get('schema')!r}.")
+    if strict:
+        problems.extend(_strict_problems(doc))
+    else:
+        for field in ("id", "version", "name"):
+            if not doc.get(field):
+                problems.append(f"the Op spec is missing required field "
+                                f"{field!r}.")
 
     inputs = doc.get("inputs") or []
+    if strict and "inputs" in doc:
+        # [0.2] (0.11.0): a key that is present has its type. `inputs: {}`,
+        # `null` or `""` used to read as no inputs at all (rule
+        # present-key-typed); the same holds for every optional key below.
+        inputs = doc["inputs"]
     input_names = set()
     if not isinstance(inputs, list):
-        problems.append("the Op spec's inputs must be an ordered list of "
-                        "input declarations.")
+        problems.append(_typed("the Op spec's inputs must be an ordered list "
+                               "of input declarations.", strict))
         inputs = []
     for index, declared in enumerate(inputs):
         if not isinstance(declared, dict) or not isinstance(
@@ -932,10 +1419,10 @@ def validate(doc):
                                             declared["name"]))
 
     authority = doc.get("authority")
-    if authority is not None:
+    if authority is not None or (strict and "authority" in doc):
         if not isinstance(authority, dict):
-            problems.append("the Op spec's authority must be an object with "
-                            "ttl_minutes.")
+            problems.append(_typed("the Op spec's authority must be an "
+                                   "object with ttl_minutes.", strict))
         else:
             for key in sorted(str(k) for k in set(authority)
                               - AUTHORITY_TOP_KEYS):
@@ -943,18 +1430,20 @@ def validate(doc):
                                 f"authority:; the authority vocabulary is "
                                 f"closed.")
             ttl = authority.get("ttl_minutes")
-            if ttl is not None and (isinstance(ttl, bool)
-                                    or not isinstance(ttl, (int, float))
-                                    or ttl <= 0):
-                problems.append(f"the Op spec declares authority.ttl_minutes "
-                                f"{ttl!r}; a grant's life is a positive "
-                                f"number of minutes.")
+            # [0.2]: `ttl_minutes: null` is refused, never the default 60.
+            if ((ttl is not None or (strict and "ttl_minutes" in authority))
+                    and (isinstance(ttl, bool)
+                         or not isinstance(ttl, (int, float)) or ttl <= 0)):
+                problems.append(_typed(
+                    f"the Op spec declares authority.ttl_minutes {ttl!r}; a "
+                    f"grant's life is a positive number of minutes.",
+                    strict, "ttl-positive"))
 
     track = doc.get("track")
-    if track is not None:
+    if track is not None or (strict and "track" in doc):
         if not isinstance(track, dict):
-            problems.append("the Op spec's track must be an object with a "
-                            "records list.")
+            problems.append(_typed("the Op spec's track must be an object "
+                                   "with a records list.", strict))
         else:
             for key in sorted(str(k) for k in set(track) - TRACK_KEYS):
                 problems.append(f"unknown key {key!r} under track:; the Track "
@@ -984,6 +1473,8 @@ def validate(doc):
         if not _has_id(step):
             continue
         sid = step["id"]
+        if strict:
+            problems.extend(_strict_step_problems(step, sid))
         for key, phase in REFUSED_STEP.items():
             if key not in step:
                 continue
@@ -993,16 +1484,18 @@ def validate(doc):
             else:
                 problems.append(f"Op step {sid!r} declares a {key}: step, "
                                 f"which the runner subset does not carry — "
-                                f"{phase} adds it.")
-        for key in sorted(str(k) for k in set(step) - STEP_KEYS
-                          - set(REFUSED_STEP)):
+                                f"{phase}.")
+        for key in sorted(str(k) for k in set(step) - step_keys
+                          - set(REFUSED_STEP)
+                          - ({"name"} if strict else set())):
             problems.append(f"unknown key {key!r} on Op step {sid!r}; the step "
                             f"vocabulary is closed.")
         declared_deps = step.get("depends_on")
-        if declared_deps is not None and not isinstance(declared_deps, list):
-            problems.append(f"Op step {sid!r} declares depends_on "
-                            f"{declared_deps!r}; depends_on is a list of step "
-                            f"ids.")
+        if (declared_deps is not None or (strict and "depends_on" in step)) \
+                and not isinstance(declared_deps, list):
+            problems.append(_typed(f"Op step {sid!r} declares depends_on "
+                                   f"{declared_deps!r}; depends_on is a list "
+                                   f"of step ids.", strict))
             declared_deps = []
         for dep in declared_deps or []:
             if not isinstance(dep, str):
@@ -1037,11 +1530,12 @@ def validate(doc):
                                     f"{cog[field]!r}; cog.{field} is a "
                                     f"string.")
 
-        _gate_problems(step, sid, problems)
+        _gate_problems(step, sid, problems, strict=strict)
 
         _authority_problems(step, sid, step_ids, human_gate_steps(steps),
-                            problems, artifact_gate_steps(steps))
-        _repeat_problems(step, sid, problems)
+                            problems, artifact_gate_steps(steps),
+                            strict=strict)
+        _repeat_problems(step, sid, problems, strict=strict)
 
         on_fail = step.get("on_fail", "stop")
         if on_fail not in ON_FAIL:
@@ -1049,10 +1543,24 @@ def validate(doc):
                             f"choose one of {list(ON_FAIL)}.")
 
         foreach = step.get("foreach")
-        if foreach is not None:
+        if (foreach is not None and isinstance(step.get("gate"), dict)
+                and gate_policy(step) == HUMAN_GATE_POLICY
+                and gate_decides(step) == DECIDES_CHANGES):
+            # Machinery 0.10.0. A human Gate over changes reads ONE `changes`
+            # list from the step's payload, and a foreach step's payload is
+            # the LIST of element payloads: the pause could never be asked.
+            # It used to load and fail when the run reached the pause.
+            problems.append(f"Op step {sid!r} declares foreach and a human "
+                            f"Gate over changes; the Gate reads one changes "
+                            f"list from the step's payload, but a foreach "
+                            f"step's payload is the list of its element "
+                            f"payloads. Gate a later step that gathers the "
+                            f"proposals instead.")
+        if foreach is not None or (strict and "foreach" in step):
             if not isinstance(foreach, dict):
-                problems.append(f"Op step {sid!r}'s foreach must be an object "
-                                f"with items and as.")
+                problems.append(_typed(f"Op step {sid!r}'s foreach must be "
+                                       f"an object with items and as.",
+                                       strict))
             else:
                 for key in sorted(str(k) for k in set(foreach) - FOREACH_KEYS):
                     problems.append(f"unknown key {key!r} under Op step "
@@ -1101,10 +1609,11 @@ def validate(doc):
         if step.get("foreach") is not None:
             _expr_problems((step["foreach"] or {}).get("items"),
                            f"Op step {sid!r} foreach.items", input_names,
-                           step_ids, dep_ids, set(), problems, human_steps)
+                           step_ids, dep_ids, set(), problems, human_steps,
+                           strict)
         _expr_problems(step.get("input") or {}, f"Op step {sid!r} input",
                        input_names, step_ids, dep_ids, loop_vars, problems,
-                       human_steps)
+                       human_steps, strict)
         if sid in artifact_steps and isinstance(gate_artifact(step), dict):
             # The artifact is evaluated AFTER the step's own Cog answered, so
             # it may read this step's payload and envelope as well as its
@@ -1113,7 +1622,9 @@ def validate(doc):
             _expr_problems(gate_artifact(step),
                            f"Op step {sid!r} gate.artifact", input_names,
                            step_ids, dep_ids | {sid}, loop_vars, problems,
-                           human_steps - {sid})
+                           human_steps - {sid}, strict)
+            if strict and loop_vars:
+                problems.extend(_artifact_loop_problems(step, sid, loop_vars))
         for index, requirement in enumerate(requirements(step)):
             if not isinstance(requirement, dict):
                 continue
@@ -1123,15 +1634,17 @@ def validate(doc):
                         requirement[field],
                         f"Op step {sid!r} authority.requires[{index}].{field}",
                         input_names, step_ids, dep_ids, loop_vars, problems,
-                        human_steps)
+                        human_steps, strict)
 
     outputs = doc.get("outputs") or {}
+    if strict and "outputs" in doc:
+        outputs = doc["outputs"]        # [0.2]: `outputs: []` is refused
     if not isinstance(outputs, dict):
-        problems.append("the Op spec's outputs must be an object of mapping "
-                        "expressions.")
+        problems.append(_typed("the Op spec's outputs must be an object of "
+                               "mapping expressions.", strict))
     else:
         _expr_problems(outputs, "the Op spec's outputs", input_names, step_ids,
-                       step_ids, set(), problems, human_steps)
+                       step_ids, set(), problems, human_steps, strict)
 
     if not problems and 'cycle' in doc:
         try:
@@ -1155,7 +1668,10 @@ def cycle_phases(doc):
     ids = [step['id'] for step in ordered]
     if cycle['outcome_step'] not in ids or not isinstance(cycle['outcome_field'], str) or not cycle['outcome_field']:
         raise OpSpecError('cycle must name a declared outcome step and payload field.')
-    if any(requirements(step) for step in ordered) or base.get('authority'):
+    # [0.2] (0.11.0): ANY top-level authority beside a cycle, `{}` included.
+    declares_authority = ('authority' in base if profile_of(doc) == PROFILE_0_2
+                          else base.get('authority'))
+    if any(requirements(step) for step in ordered) or declares_authority:
         raise OpSpecError('The bounded cycle profile supports pure steps without authority only.')
     if any(value['name'] == 'cycle_previous' for value in base.get('inputs', [])):
         raise OpSpecError('cycle_previous is reserved for durable phase input.')
@@ -1198,7 +1714,9 @@ def cycle_phases(doc):
         raise OpSpecError('cycle terminal_errors maps declared steps to distinct nonempty envelope error codes.')
     for key in ('max_attempts', 'max_cost_units'):
         problems = []
-        _expr_problems(cycle[key], 'cycle.' + key, {value['name'] for value in base.get('inputs', [])}, set(), set(), set(), problems, set())
+        _expr_problems(cycle[key], 'cycle.' + key, {value['name'] for value in base.get('inputs', [])}, set(), set(), set(), problems, set(), profile_of(doc) == PROFILE_0_2)
+        if profile_of(doc) == PROFILE_0_2:
+            problems.extend(_cycle_limit_problems(cycle[key], 'cycle.' + key))
         if problems:
             raise OpSpecError(problems)
     return phases
@@ -1211,9 +1729,16 @@ class OpSpec:
         self.doc = doc
         self.path = Path(path).resolve() if path else None
         self.ordered = validate(doc)
+        self.schema = doc["schema"]
+        #: `0.1` or `0.2`: which profile's run-time rules apply (0.11.0).
+        self.profile = profile_of(doc)
         self.id = doc["id"]
         self.version = str(doc.get("version", ""))
-        self.name = doc.get("name")
+        #: The human-readable name: `title` in `[0.2]`, `name` in `[0.1]`.
+        #: `name` stays as the same value for callers written before 0.11.0.
+        self.title = doc.get("title" if self.profile == PROFILE_0_2
+                             else "name")
+        self.name = self.title
         self.description = doc.get("description")
         self.inputs = doc.get("inputs") or []
         self.steps = doc["steps"]
@@ -1221,6 +1746,11 @@ class OpSpec:
         self.track = doc.get("track") or {}
         self.authority = doc.get("authority") or {}
         self.ttl_minutes = ttl_minutes(doc)
+
+    @property
+    def change_target_key(self):
+        """The field a proposed change names its target under."""
+        return change_target_key(self.profile)
 
     def step(self, sid):
         for step in self.steps:
@@ -1407,11 +1937,15 @@ def _authority_findings(step, sid, cog, manifest):
     return findings
 
 
-def cog_step_findings(step, source_dir):
+def cog_step_findings(step, source_dir, profile=PROFILE_0_1):
     """[(level, detail)] for one Cog step's declaration, checked against the
     Cog at SOURCE_DIR: it must be that Cog, and the task must be one of its
     declared USAGE interfaces. A source that is simply absent is a warning —
-    the declaration could not be verified on this machine."""
+    the declaration could not be verified on this machine (a RUN of a `[0.2]`
+    document refuses it: `declaration_problems`).
+
+    PROFILE `0.2` (0.11.0): a stated `cog.version` other than the Cog's is an
+    error, where `[0.1]` warns."""
     cog = step.get("cog") or {}
     sid = step.get("id")
     source = Path(source_dir)
@@ -1430,10 +1964,13 @@ def cog_step_findings(step, source_dir):
                                   f"{cog['id']!r} but {cog.get('source')!r} "
                                   f"identifies as {manifest.get('id')!r}."))
     if cog.get("version") and manifest.get("version") != cog["version"]:
-        findings.append(("warn", f"Op step {sid!r} declares version "
-                                 f"{cog['version']!r} but "
-                                 f"{cog.get('source')!r} is at "
-                                 f"{manifest.get('version')!r}."))
+        strict = profile == PROFILE_0_2
+        findings.append(("error" if strict else "warn",
+                         f"Op step {sid!r} declares version "
+                         f"{cog['version']!r} but {cog.get('source')!r} is at "
+                         f"{manifest.get('version')!r}"
+                         + ("; a step names the Cog version it runs."
+                            if strict else ".")))
     findings.extend(_authority_findings(step, sid, cog, manifest))
     if step.get("repeat") is not None and (manifest.get("reaches") or []):
         # The same rule as the `authority` refusal in `_repeat_problems`,
@@ -1464,13 +2001,48 @@ def cog_step_findings(step, source_dir):
     return findings
 
 
+def cog_source_dir(package_root, step):
+    """The resolved directory STEP's `cog.source` names (0.11.0).
+
+    Every run-time reader of a source — the run start's and a resume's
+    declaration check, the step loop, a resume's changed-Cog record, a
+    cycle's preflight and phases — goes through this, so a source no
+    filesystem can name (an embedded NUL, or a link loop, which Python
+    3.12's resolve raises as RuntimeError) is an OpSpecError naming the
+    step: a refusal with its reason, or a failed step once the run has
+    started, never an exception past the runner's handlers."""
+    source = (step.get("cog") or {}).get("source")
+    try:
+        return (Path(package_root) / str(source)).resolve()
+    except (ValueError, OSError, RuntimeError) as exc:
+        raise OpSpecError(
+            f"Op step {step.get('id')!r} names cog source {source!r}, which "
+            f"is not a path this machine can name ({type(exc).__name__}: "
+            f"{exc}).") from exc
+
+
 def declaration_problems(spec, package_root):
     """Every ERROR a step's Cog declaration carries, across the whole spec —
-    what the runner refuses before it invokes anything."""
+    what the runner refuses before it invokes anything.
+
+    For a `[0.2]` document (0.11.0) a named Cog that is not present when the
+    run starts is an error too, and so is a stated version that differs from
+    the Cog's."""
     problems = []
+    profile = getattr(spec, "profile", PROFILE_0_1)
     for step in spec.ordered:
-        source = (Path(package_root)
-                  / str((step.get("cog") or {}).get("source"))).resolve()
+        try:
+            source = cog_source_dir(package_root, step)
+        except OpSpecError as exc:
+            problems.extend(exc.problems)
+            continue
+        if profile == PROFILE_0_2 and not source.is_dir():
+            problems.append(f"Op step {step.get('id')!r} names cog source "
+                            f"{(step.get('cog') or {}).get('source')!r}, "
+                            f"which is not present; every Cog a run names "
+                            f"is present when it starts.")
+            continue
         problems.extend(detail for level, detail
-                        in cog_step_findings(step, source) if level == "error")
+                        in cog_step_findings(step, source, profile)
+                        if level == "error")
     return problems

@@ -22,7 +22,7 @@ jobs:
           python-version: "3.12"
       - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
         with:
-          pixi-version: v0.69.0
+          pixi-version: v0.84.1
           run-install: false
       - name: Test workspace safeguards
         run: python3 -m unittest discover -s workspace/cog-op-builder/tests -v

@@ -84,6 +84,37 @@ class WorkspaceTests(unittest.TestCase):
         (self.component / 'caller.py').write_text("CALLER = ROOT.parent / '" + 'cog-' + "issue-classifier'\n")
         self.assertEqual([x['rule'] for x in self.scan()], ['private-reference'])
 
+    def test_stale_ca_bundle_in_any_lock_fails(self):
+        url = '      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-{}-hbd8a1cb_0.conda\n'
+        (self.component / 'pixi.lock').write_text(url.format('2026.10.23'))
+        nested = self.suite / 'examples/demo'
+        nested.mkdir(parents=True)
+        (nested / 'pixi.lock').write_text(url.format('2026.10.23'))
+        self.assertEqual(checker.check(self.workspace, self.suite), [])
+        (nested / 'pixi.lock').write_text(url.format('2026.7.22'))
+        errors = checker.check(self.workspace, self.suite)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('cog-op-builder/examples/demo/pixi.lock: ca-certificates 2026.7.22', errors[0])
+
+    def test_stale_certifi_in_any_lock_fails(self):
+        urls = ['      - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-{}-pyhd8ed1ab_0.conda\n',
+                '      - pypi: https://files.pythonhosted.org/packages/ab/cd/certifi-{}-py3-none-any.whl\n',
+                '      - pypi: https://files.pythonhosted.org/packages/ab/cd/certifi-{}.tar.gz\n']
+        (self.component / 'pixi.lock').write_text(''.join(url.format('2026.10.23') for url in urls))
+        self.assertEqual(checker.check(self.workspace, self.suite), [])
+        for url in urls:
+            with self.subTest(url=url):
+                (self.component / 'pixi.lock').write_text(url.format('2026.10.19'))
+                errors = checker.check(self.workspace, self.suite)
+                self.assertEqual(len(errors), 1)
+                self.assertIn('cog-example/pixi.lock: certifi 2026.10.19 predates 2026.10.23', errors[0])
+
+    def test_deleted_lock_is_reported_not_raised(self):
+        (self.component / 'pixi.lock').write_text('version: 6\n')
+        self.commit(self.component)
+        (self.component / 'pixi.lock').unlink()
+        self.assertEqual(checker.check(self.workspace, self.suite), ['cog-example/pixi.lock:0: missing-file: pixi.lock'])
+
     def test_missing_checkout(self):
         self.component.rename(self.workspace / 'elsewhere')
         self.assertTrue(any('missing Git checkout' in x for x in checker.check(self.workspace, self.suite)))

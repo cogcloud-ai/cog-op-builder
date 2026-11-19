@@ -24,6 +24,21 @@ class BudgetExhausted(ValueError):
     pass
 
 
+#: A cycle that cannot go on (machinery 0.10.0): a transition whose next
+#: phase could not be prepared, or any other refusal or error out of `drive`
+#: that would have left the saved state `running`. Final, like `refused` and
+#: `budget-exhausted`: `resume` reports it and drives nothing. Distinct from
+#: `failed`, which is a failed CHILD run the cycle can resume.
+CYCLE_FAILED = 'cycle-failed'
+TERMINAL = ('completed', 'completed-with-problems', 'rejected', 'refused', 'budget-exhausted', CYCLE_FAILED)
+#: What `drive` records as a failed cycle rather than raising: refusals and
+#: errors that would recur on every resume (BudgetExhausted is a ValueError
+#: with its own terminal status and is handled first). An OSError is NOT one
+#: of them: it is an interruption, like a crash, and the `running` state it
+#: leaves is true — `resume` recovers the durable work and carries on.
+DRIVE_ERRORS = (op_spec.OpSpecError, ValueError, KeyError, TypeError)
+
+
 def read(path):
     return json.loads(Path(path).read_text())
 
@@ -44,6 +59,8 @@ def summary(state, directory, child=None):
              'max_attempts': state['max_attempts'], 'max_cost_units': state['max_cost_units']}
     if state.get('reason'):
         value['reason'] = state['reason']
+    if state.get('failure'):
+        value['failure'] = state['failure']
     if child:
         value['child'] = child
         for key in ('step', 'pending', 'track', 'outputs'):
@@ -57,7 +74,10 @@ def preflight(package, phases):
         spec = op_spec.OpSpec(phase)
         problems = op_spec.declaration_problems(spec, package)
         for step in spec.ordered:
-            source = (Path(package) / step['cog']['source']).resolve()
+            try:
+                source = op_spec.cog_source_dir(package, step)
+            except op_spec.OpSpecError:
+                continue  # declaration_problems has named it
             manifest, error = op_spec.read_cog_manifest(source)
             if error or manifest is None or manifest.get('reaches'):
                 problems.append('Cycles require installed pure Cog declarations: ' + step['id'])
@@ -84,7 +104,7 @@ def new_phase(package, directory, state, phases, outcome='initial', prior=None):
     op_track.ensure_dir(phase_package / 'src')
     doc = copy.deepcopy(phases[outcome])
     for step in doc['steps']:
-        source = (Path(package) / step['cog']['source']).resolve()
+        source = op_spec.cog_source_dir(package, step)
         step['cog']['source'] = os.path.relpath(source, phase_package)
     spec = op_spec.OpSpec(doc)
     op_track.write_json(phase_package / 'op.yaml', doc, base=directory)
@@ -131,6 +151,8 @@ def drive(package, directory, state, phases, decision=None):
         state['reservations'].append({'phase': len(state['phases']), 'step': sid, 'units': units, 'at': op_track.utc_now()})
         save(state, directory)
     policy = {**state['configuration'], 'reserve': reserve, 'owner': str(Path(directory).resolve())}
+    # Where the cycle is, for the record a failure leaves (0.10.0).
+    stage = {'phase': 1, 'outcome': 'initial', 'action': 'prepare the first phase'}
     try:
         if not state['phases']:
             new_phase(package, directory, state, phases)
@@ -146,11 +168,26 @@ def drive(package, directory, state, phases, decision=None):
                     phase['run_dir'] = str(existing[0].parent)
                     save(state, directory)
             track = read(Path(phase['run_dir']) / 'track.json') if phase['run_dir'] else None
+            if track and track['status'] == 'paused' and state['status'] == 'running':
+                # The child paused durably and the process stopped before the
+                # cycle recorded it: the cycle IS paused, waiting on the same
+                # decision (0.11.0). Recovered here, before anything can
+                # fail, so a refused decision is classified against the true
+                # `paused` state — raised, exit 2, the cycle still resumable
+                # with a corrected decision — rather than against a stale
+                # `running` one, which would make it a final `cycle-failed`.
+                phase['status'] = state['status'] = 'paused'
+                save(state, directory)
             if track and track['status'] == 'cycle-transition':
                 phase['status'] = 'cycle-transition'
                 save(state, directory)
-                new_phase(package, directory, state, phases, track['cycle_outcome'], track)
+                outcome = track['cycle_outcome']
+                restart = state['configuration']['transitions'].get(outcome, {}).get('restart')
+                stage = {'phase': phase['number'], 'outcome': outcome, 'restart': restart,
+                         'action': f'start phase {phase["number"] + 1} (restart at {restart!r})'}
+                new_phase(package, directory, state, phases, outcome, track)
                 continue
+            stage = {'phase': phase['number'], 'outcome': phase['outcome'], 'action': f'run phase {phase["number"]}'}
             if track and track['status'] in ('completed', 'completed-with-problems', 'rejected'):
                 phase['status'] = track['status']
                 state['status'] = 'completed' if track['status'] == 'completed' else track['status']
@@ -185,11 +222,16 @@ def drive(package, directory, state, phases, decision=None):
             if child['status'] == 'failed':
                 track = read(Path(child['run_dir']) / 'track.json')
                 failed = next((row for row in track['steps'] if row['status'] == 'failed'), None)
+                if track.get('reason'):
+                    state['reason'] = track['reason']  # e.g. outputs that could not be evaluated
                 if failed:
                     state['reason'] = '; '.join((failed.get('gate') or {}).get('reasons') or ['Step failed: ' + failed['id']])
                     envelope = read(failed['envelope']) if failed.get('envelope') else {}
                     error = envelope.get('error') or {}
-                    reported = envelope.get('raw')
+                    # A well-formed envelope from a Cog that exited nonzero
+                    # is kept as error.evidence.envelope (machinery 0.10.0).
+                    evidence = error.get('evidence') if isinstance(error.get('evidence'), dict) else {}
+                    reported = evidence.get('envelope')
                     if error.get('code') == 'invocation-failed' and isinstance(reported, dict) and not op_runner.envelope_problems(reported) and reported.get('ok') is False:
                         error = reported.get('error') or error
                     if error.get('code') in state['configuration'].get('terminal_errors', {}).get(failed['id'], []):
@@ -212,6 +254,22 @@ def drive(package, directory, state, phases, decision=None):
                     op_track.save(track, Path(phase['run_dir']))
                     phase['status'] = 'budget-exhausted'
         state['status'], state['reason'] = 'budget-exhausted', str(exc)
+        save(state, directory)
+        return 1, summary(state, directory)
+    except DRIVE_ERRORS as exc:
+        if state['status'] != 'running':
+            # A refusal that left a true state — a bad decision keeps the
+            # cycle `paused`, a failed child keeps it `failed` — is the
+            # caller's to fix: raised, exit 2, as before.
+            raise
+        # A refusal that would leave the saved state `running`, though the
+        # same refusal would stop every resume (0.10.0), is recorded as a
+        # failed cycle with the reason and the phase or transition it
+        # happened at, and exits 1.
+        problems = exc.problems if isinstance(exc, op_spec.OpSpecError) else [f'{type(exc).__name__}: {exc}']
+        state['status'] = CYCLE_FAILED
+        state['reason'] = f"Could not {stage['action']}: " + ' '.join(str(p) for p in problems)
+        state['failure'] = {**stage, 'problems': [str(p) for p in problems], 'at': op_track.utc_now()}
         save(state, directory)
         return 1, summary(state, directory)
 
@@ -268,7 +326,7 @@ def resume(package, directory, decision=None):
                     count = len(step.get('attempts') or [])
                     if recorded[(phase['number'], step['id'])] < count:
                         raise op_spec.OpSpecError('Cycle reservation ledger is smaller than the child Track invocation ledger.')
-        if state['status'] in ('completed', 'completed-with-problems', 'rejected', 'refused', 'budget-exhausted'):
+        if state['status'] in TERMINAL:
             return (0 if state['status'] in ('completed', 'completed-with-problems') else 1), summary(state, directory)
         phases = op_spec.cycle_phases(spec.doc); preflight(package, phases)
         return drive(package, directory, state, phases, decision)

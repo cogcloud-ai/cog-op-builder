@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A fictional learning workflow. Uses explicit synthetic fixtures; a person chooses the final shortlist. No external effects."
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
+requires-pixi = ">=0.82.1"
 
 [dependencies]
 # 3.11+: the Op machinery matches the created-Cog floor

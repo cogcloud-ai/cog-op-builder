@@ -1,7 +1,9 @@
 # Public preview: setup and verification
 
 This preview uses sibling Git checkouts on macOS Apple Silicon or Linux x86-64.
-Install Git, Python 3.11 or newer, and [Pixi](https://pixi.sh/latest/installation/).
+Install Git, Python 3.11 or newer, and [Pixi](https://pixi.sh/latest/installation/) 0.82.1 or newer.
+The component environments declare `requires-pixi = ">=0.82.1"`, so older Pixi
+releases refuse to install them; run `pixi self-update` to upgrade.
 The repository manifest pins component commits; existing checkouts are never
 reset by the setup script. Use a new directory to reproduce the pinned preview.
 
