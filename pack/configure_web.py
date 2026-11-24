@@ -123,6 +123,34 @@ def main():
     environment[:] = [entry for entry in environment if entry['name'] not in entries]
     environment.extend({'name': name, **value} for name, value in entries.items())
     args.values.write_text(json.dumps(values, indent=2) + '\n')
+    # Cluster traffic must not hairpin through the host's blocked Tailscale
+    # interface. Keep the public TLS name and port, using an internal gateway
+    # Service for the API's server-side OIDC requests.
+    gateway_namespace = 'envoy-gateway-system'
+    gateways = kube('-n', gateway_namespace, 'get', 'service', '-l',
+                    'app.kubernetes.io/managed-by=envoy-gateway,'
+                    'gateway.envoyproxy.io/owning-gateway-name=nebari-gateway')['items']
+    if len(gateways) != 1:
+        parser.error('Expected one Envoy service for nebari-gateway.')
+    tls_port = next(port for port in gateways[0]['spec']['ports'] if port['port'] == 443)
+    apply({'apiVersion': 'v1', 'kind': 'Service',
+           'metadata': {'name': 'builder-web-internal', 'namespace': gateway_namespace},
+           'spec': {'selector': gateways[0]['spec']['selector'], 'ports': [{
+               'name': 'https', 'port': urllib.parse.urlsplit(origin).port or 443,
+               'targetPort': tls_port['targetPort'], 'protocol': 'TCP'}]}})
+    internal_ip = kube('-n', gateway_namespace, 'get', 'service',
+                       'builder-web-internal')['spec']['clusterIP']
+    hostname = urllib.parse.urlsplit(origin).hostname
+    deployment = kube('-n', HUB, 'get', 'deployment', 'collab-hub-api')
+    aliases = deployment['spec']['template']['spec'].get('hostAliases', [])
+    aliases = [{'ip': entry['ip'], 'hostnames': [name for name in entry['hostnames']
+                                               if name != hostname]} for entry in aliases]
+    aliases = [entry for entry in aliases if entry['hostnames']]
+    aliases.append({'ip': internal_ip, 'hostnames': [hostname]})
+    subprocess.run(['kubectl', '-n', HUB, 'patch', 'deployment', 'collab-hub-api',
+                    '--type=merge', '--patch-file=/dev/stdin'],
+                   input=json.dumps({'spec': {'template': {'spec': {'hostAliases': aliases}}}}),
+                   text=True, check=True)
     apply({'apiVersion': 'gateway.networking.k8s.io/v1', 'kind': 'HTTPRoute',
            'metadata': {'name': 'builder-home', 'namespace': HUB}, 'spec': {
                'parentRefs': [{'name': 'nebari-gateway', 'namespace': 'envoy-gateway-system'}],

@@ -142,6 +142,9 @@ printf '%s' "$builder_password" | python3 pack/configure_web.py \
 unset builder_password
 helm upgrade collab-hub "$HUB_SOURCE/helm/collab-hub" \
   -n collab-builder -f hub-values.json --wait --timeout 5m
+python3 pack/configure_web.py \
+  --origin "https://$BUILDER_HOSTNAME:8443" --values hub-values.json --username trent
+kubectl -n collab-builder rollout status deployment/collab-hub-api --timeout=120s
 ```
 
 The setup registers the exact callback URI, stores the confidential client and
@@ -150,6 +153,13 @@ and redirects `/` to Hub's `/web/home`. Open `/web/signin` and use the username
 and password chosen above. This account uses the test Hub's existing claims-based
 organization scope. Builder authoring screens and authenticated approval Gates
 are separate subsequent work.
+
+The helper also creates an internal gateway Service on the public HTTPS port
+and adds a hostname mapping to the API pod. Server-side OIDC requests keep the
+public issuer name and validate its certificate while staying within the
+cluster, where the host firewall blocks Tailscale access. Rerun the helper after
+Helm upgrades to reconcile this mapping. It preserves an existing account's
+password unless `--password-stdin` is explicitly supplied.
 
 The health endpoint returns an empty HTTP 200 response. The signed API test
 client remains available independently of the browser session.
