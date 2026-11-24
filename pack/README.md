@@ -97,6 +97,20 @@ the host's private interface. Use the configured hostname for TLS and trust the
 public CA certificate in the `builder-ca` ConfigMap. The private key stays in
 cert-manager's namespace. No public ingress or DNS change is needed.
 
+On macOS clients, copy that public CA certificate to `builder-ca.crt` and add
+user-level SSL trust scoped to the configured hostname. Set `BUILDER_HOSTNAME`
+to the same name passed to `platform.py`.
+
+```sh
+security add-trusted-cert -r trustRoot -p ssl -s "$BUILDER_HOSTNAME" \
+  -k "$HOME/Library/Keychains/login.keychain-db" builder-ca.crt
+```
+
+Reload the browser after adding trust. Each client device needs its own trust
+configuration. Command-line clients can use `curl --cacert builder-ca.crt`.
+The health endpoint returns an empty HTTP 200 response. Hub's root requires
+authentication; this first slice uses the signed API test client described above.
+
 Use immutable image digests in the deployment after loading the built image.
 Record the image digest, full source revisions, suite counts/skips, run id and
 saved report for each qualification. `proof.py` and `check_image.py` are executable
