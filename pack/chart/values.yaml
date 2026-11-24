@@ -1,0 +1,12 @@
+image:
+  repository: collab-builder/worker
+  tag: step1
+  pullPolicy: Never
+proof:
+  enabled: true
+  hubUrl: http://collab-hub-api
+  tokenUrl: https://keycloak.collab-builder-infra.svc:8443/auth/realms/builder/protocol/openid-connect/token
+  clientSecretName: builder-proof
+  caConfigMap: builder-ca
+evidence:
+  size: 1Gi

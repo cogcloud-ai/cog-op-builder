@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "suite": {
+    "url": "https://github.com/cogcloud-ai/cog-op-builder.git",
+    "revision": "d6beeba96ffb0767e0f3574a676c94267ee30ba1"
+  },
+  "hub": {
+    "url": "https://github.com/openteams-ai/collab-hub-pack.git",
+    "revision": "eab8189a5d476a8c9debbe23c8db173793d31746"
+  },
+  "platform": {
+    "operatorChart": "oci://quay.io/nebari/charts/nebari-operator",
+    "operatorVersion": "0.2.0",
+    "operatorChartDigest": "sha256:afafaea80ec12855cec22a1b82f36e6bc3b696265b15d820075509d7e6d6cc9a",
+    "gatewayVersion": "v1.9.1",
+    "certManagerVersion": "v1.19.1"
+  }
+}
