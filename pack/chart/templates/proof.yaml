@@ -1,0 +1,62 @@
+{{- if .Values.proof.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-proof-{{ .Release.Revision }}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 360
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: proof
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [python, /opt/builder-pack/proof.py]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          env:
+            - name: BUILDER_HUB_URL
+              value: {{ .Values.proof.hubUrl | quote }}
+            - name: BUILDER_TOKEN_URL
+              value: {{ .Values.proof.tokenUrl | quote }}
+            - name: BUILDER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.proof.clientSecretName }}
+                  key: client-secret
+            - name: BUILDER_CA_FILE
+              value: /ca/ca.crt
+          volumeMounts:
+            - name: ca
+              mountPath: /ca
+              readOnly: true
+            - name: evidence
+              mountPath: /evidence
+      volumes:
+        - name: ca
+          configMap:
+            name: {{ .Values.proof.caConfigMap }}
+        - name: evidence
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-evidence
+{{- end }}

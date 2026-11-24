@@ -1,0 +1,17 @@
+name: Builder pack image
+on:
+  pull_request:
+    paths: ["pack/**", ".github/workflows/pack.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build pinned Hub and Builder, verify suite and offline smoke
+        run: bash pack/build.sh
