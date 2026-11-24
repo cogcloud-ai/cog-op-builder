@@ -108,8 +108,51 @@ security add-trusted-cert -r trustRoot -p ssl -s "$BUILDER_HOSTNAME" \
 
 Reload the browser after adding trust. Each client device needs its own trust
 configuration. Command-line clients can use `curl --cacert builder-ca.crt`.
-The health endpoint returns an empty HTTP 200 response. Hub's root requires
-authentication; this first slice uses the signed API test client described above.
+Chrome can ignore hostname-scoped macOS CA settings. To trust the current server
+certificate specifically, export the public `tls.crt` from the Hub's gateway TLS
+Secret to `builder-server.crt`, then add it to the login keychain.
+
+```sh
+security add-trusted-cert -r trustAsRoot -p ssl \
+  -k "$HOME/Library/Keychains/login.keychain-db" builder-server.crt
+```
+
+This trust applies to that exact server certificate and needs updating when the
+certificate rotates. Chrome's Security panel should report a valid, trusted
+certificate. Previously bypassed certificate errors can leave existing pages
+marked as having loaded insecure content. A fresh Incognito window can verify
+the new trust without the regular profile's earlier connection state. If the
+regular profile still shows the warning, save your work, fully quit Chrome, and
+reopen it. Confirm that site information says "Connection is secure" before
+entering credentials.
+
+## Enable browser sign-in
+
+The optional browser setup uses Hub's existing confidential OIDC client and
+secure session cookies. Run after `platform.py` and the initial Hub deployment.
+Use `--password-stdin` to supply the local account password privately. Without
+that option an existing account's password is preserved.
+
+```sh
+read -r -s -p "Choose the local Hub password " builder_password
+printf '\n'
+printf '%s' "$builder_password" | python3 pack/configure_web.py \
+  --origin "https://$BUILDER_HOSTNAME:8443" --values hub-values.json \
+  --username trent --password-stdin
+unset builder_password
+helm upgrade collab-hub "$HUB_SOURCE/helm/collab-hub" \
+  -n collab-builder -f hub-values.json --wait --timeout 5m
+```
+
+The setup registers the exact callback URI, stores the confidential client and
+session secrets in Kubernetes Secrets, creates the named local Keycloak user,
+and redirects `/` to Hub's `/web/home`. Open `/web/signin` and use the username
+and password chosen above. This account uses the test Hub's existing claims-based
+organization scope. Builder authoring screens and authenticated approval Gates
+are separate subsequent work.
+
+The health endpoint returns an empty HTTP 200 response. The signed API test
+client remains available independently of the browser session.
 
 Use immutable image digests in the deployment after loading the built image.
 Record the image digest, full source revisions, suite counts/skips, run id and
